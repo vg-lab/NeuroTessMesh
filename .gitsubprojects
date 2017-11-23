@@ -1,0 +1,6 @@
+#-*- mode: cmake -*-
+#git_subproject(ZeroEQ https://github.com/HBPVis/ZeroEQ.git 1014ea8)
+#git_subproject(Lexis https://github.com/HBPVis/Lexis.git c0adc62)
+#git_subproject(gmrvlex git@gitlab.gmrv.es:nsviz/gmrvlex.git c20b194d)
+#git_subproject(Deflect https://github.com/BlueBrain/Deflect 3328e67)
+git_subproject(neurolots https://github.com/gmrvvis/neurolots master)

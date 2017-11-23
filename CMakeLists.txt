@@ -1,0 +1,90 @@
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+#
+#   NeuroTessMesh
+#   2017 (c) Universidad Rey Juan Carlos
+#
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+project(neurotessmesh VERSION 0.0.0)
+set(neurotessmesh_VERSION_ABI 0)
+
+# Disable in source building
+if( "${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}" )
+  message( FATAL "no in source building allowed." )
+endif()
+
+list( APPEND CMAKE_MODULE_PATH
+  ${PROJECT_SOURCE_DIR}/CMake
+  ${CMAKE_SOURCE_DIR}/CMake/common )
+
+if(NOT EXISTS ${CMAKE_SOURCE_DIR}/CMake/common/Common.cmake)
+  message(FATAL_ERROR "CMake/common missing, run: git submodule update --init")
+endif()
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif(NOT CMAKE_BUILD_TYPE)
+
+option( NEUROTESSMESH_OPTIONALS_AS_REQUIRED
+  "Force optional dependencies as required" OFF )
+
+if ( NEUROTESSMESH_OPTIONALS_AS_REQUIRED )
+  set( NEUROTESSMESH_OPTS_FIND_ARGS "REQUIRED" )
+else()
+  set( NEUROTESSMESH_OPTS_FIND_ARGS "" )
+endif()
+
+include(GitExternal)
+
+#description
+set(NEUROTESSMESH_DESCRIPTION "NeuroTessMesh")
+set( NEUROSCHEME_MAINTAINER "Juan Jose Garcia Cantero <juanjose.garcia@urjc.es>")
+set( NEUROSCHEME_LICENSE LGPL)
+set(COMMON_PROJECT_DOMAIN gmrv.es)
+
+include(Common)
+
+common_find_package(Boost COMPONENTS unit_test_framework)
+common_find_package(Qt5Core 5.4 SYSTEM )
+common_find_package(Qt5Widgets 5.4 SYSTEM )
+common_find_package(Qt5OpenGL 5.4 SYSTEM )
+common_find_package(neurolots REQUIRED)
+# common_find_package(Deflect ${NEUROTESSMESH_OPTS_FIND_ARGS})
+common_find_package(Lexis ${NEUROTESSMESH_OPTS_FIND_ARGS})
+common_find_package(ZeroEQ ${NEUROTESSMESH_OPTS_FIND_ARGS})
+common_find_package(gmrvlex ${NEUROTESSMESH_OPTS_FIND_ARGS})
+
+list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Qt5::Core Qt5::Concurrent
+  Qt5::Network Qt5::Quick Qt5::WidgetsOpenGL nlrender nlgenerator nlphysics
+  nlgeometry)
+
+if (DEFLECT_FOUND)
+  list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Deflect)
+endif( )
+
+if (LEXIS_FOUND)
+  list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Lexis)
+endif( )
+
+if ( ZEROEQ_FOUND )
+  common_find_package(Threads REQUIRED)
+  list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES ZeroEQ)
+endif( )
+
+if ( GMRVLEX_FOUND )
+  list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES gmrvlex)
+endif( )
+
+common_find_package_post()
+
+set(PROJECT_INCLUDE_NAME neurotessmesh)
+
+add_subdirectory( neurotessmesh )
+
+install(FILES ${PROJECT_BINARY_DIR}/include/neurotessmesh/defines.h
+  DESTINATION include/neurotessmesh )
+install(FILES ${PROJECT_BINARY_DIR}/include/neurotessmesh/defines${SYSTEM}.h
+  DESTINATION include/neurotessmesh )
+
+include(CPackConfig)
+include(DoxygenRule)
