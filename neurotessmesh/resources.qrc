@@ -1,0 +1,16 @@
+<RCC>
+  <qresource prefix="icons">
+    <file>gmrv_grande.png</file>
+    <file>logoURJC.png</file>
+    <file>neurotessmesh.ico</file>
+    <file>wireframe.png</file>
+    <file>open_swc.png</file>
+    <file>close.png</file>
+    <file>open_xml.png</file>
+    <file>open_bc.png</file>
+    <file>colorpicker.png</file>
+    <file>reconstruction.png</file>
+    <file>home.png</file>
+    <file>settings.png</file>
+  </qresource>
+</RCC>

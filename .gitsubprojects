@@ -1,0 +1,2 @@
+#-*- mode: cmake -*-
+git_subproject(neurolots ssh://git@gitlab.gmrv.es/nsviz/neurolots.git cbaeba01)

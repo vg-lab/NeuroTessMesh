@@ -1,0 +1,11 @@
+src/*~
+*~
+doc/html
+doc/latex
+*Makefile*
+*.orig
+.ciscript
+ci.*
+jambs*
+
+nlrender/Shaders.h
