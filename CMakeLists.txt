@@ -38,53 +38,23 @@ include(GitExternal)
 
 #description
 set(NEUROTESSMESH_DESCRIPTION "NeuroTessMesh")
-set( NEUROSCHEME_MAINTAINER "Juan Jose Garcia Cantero <juanjose.garcia@urjc.es>")
-set( NEUROSCHEME_LICENSE LGPL)
+set( NEUROTESSMESH_MAINTAINER "Juan Jose Garcia Cantero <juanjose.garcia@urjc.es>")
+set( NEUROTESSMESH_LICENSE LGPL)
 set(COMMON_PROJECT_DOMAIN gmrv.es)
 
 include(Common)
 
 common_find_package(Boost COMPONENTS unit_test_framework)
-common_find_package(Qt5Core 5.4 SYSTEM )
-common_find_package(Qt5Widgets 5.4 SYSTEM )
-common_find_package(Qt5OpenGL 5.4 SYSTEM )
+common_find_package(Eigen3 REQUIRED)
+common_find_package(nsol REQUIRED)
+common_find_package(ReTo REQUIRED)
 common_find_package(neurolots REQUIRED)
-# common_find_package(Deflect ${NEUROTESSMESH_OPTS_FIND_ARGS})
-common_find_package(Lexis ${NEUROTESSMESH_OPTS_FIND_ARGS})
-common_find_package(ZeroEQ ${NEUROTESSMESH_OPTS_FIND_ARGS})
-common_find_package(gmrvlex ${NEUROTESSMESH_OPTS_FIND_ARGS})
 
-list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Qt5::Core Qt5::Concurrent
-  Qt5::Network Qt5::Quick Qt5::WidgetsOpenGL nlrender nlgenerator nlphysics
-  nlgeometry)
+list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Eigen3 nsol ReTo neurolots)
 
-if (DEFLECT_FOUND)
-  list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Deflect)
-endif( )
-
-if (LEXIS_FOUND)
-  list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Lexis)
-endif( )
-
-if ( ZEROEQ_FOUND )
-  common_find_package(Threads REQUIRED)
-  list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES ZeroEQ)
-endif( )
-
-if ( GMRVLEX_FOUND )
-  list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES gmrvlex)
-endif( )
-
-common_find_package_post()
-
-set(PROJECT_INCLUDE_NAME neurotessmesh)
+common_find_package_post( )
 
 add_subdirectory( neurotessmesh )
-
-install(FILES ${PROJECT_BINARY_DIR}/include/neurotessmesh/defines.h
-  DESTINATION include/neurotessmesh )
-install(FILES ${PROJECT_BINARY_DIR}/include/neurotessmesh/defines${SYSTEM}.h
-  DESTINATION include/neurotessmesh )
 
 include(CPackConfig)
 include(DoxygenRule)
