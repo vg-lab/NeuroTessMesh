@@ -45,16 +45,24 @@ set(COMMON_PROJECT_DOMAIN gmrv.es)
 include(Common)
 
 common_find_package(Boost COMPONENTS unit_test_framework)
-common_find_package(Eigen3 REQUIRED)
+common_find_package(Eigen3 REQUIRED SYSTEM)
 common_find_package(nsol REQUIRED)
 common_find_package(ReTo REQUIRED)
 common_find_package(neurolots REQUIRED)
+common_find_package(Rockets REQUIRED)
+common_find_package(Lexis REQUIRED)
+common_find_package(LibJpegTurbo)
+common_find_package(OpenGL)
+common_find_package(GLEW)
+common_find_package(GLUT)
 
-list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Eigen3 nsol ReTo neurolots)
+list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Eigen3 nsol ReTo neurolots
+  Rockets Lexis LibJpegTurbo)
 
 common_find_package_post( )
 
 add_subdirectory( neurotessmesh )
+add_subdirectory( remoteRenderer )
 
 include(CPackConfig)
 include(DoxygenRule)
