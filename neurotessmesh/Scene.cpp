@@ -160,18 +160,44 @@ namespace neurotessmesh
 
   void Scene::generateMeshes( void )
   {
+    std::set< nsol::MorphologyPtr > morphologies;
+    std::vector< nsol::MorphologyPtr > morphologiesVector;
+
     for ( auto neuronIt: _dataSet->neurons( ))
     {
       auto morphology = neuronIt.second->morphology( );
-      if ( _neuronMeshes.find( morphology ) == _neuronMeshes.end( ))
+
+      if ( morphologies.find( morphology ) == morphologies.end( ))
       {
-        nsol::Simplifier::Instance( )->simplify(
-          morphology, nsol::Simplifier::DIST_NODES_RADIUS );
-        auto mesh = nlgenerator::MeshGenerator::generateMesh( morphology );
-        mesh->uploadGPU( _attribsFormat, nlgeometry::Facet::PATCHES );
-        mesh->clearCPUData( );
-        _neuronMeshes[ morphology ] = mesh;
+        morphologies.insert( morphology );
+        morphologiesVector.push_back( morphology );
       }
+    }
+
+#ifdef NEUROTESSMESH_USE_OPENMP
+    #pragma omp parallel for
+
+    for( unsigned int i = 0; i < morphologiesVector.size( ); i++ )
+    {
+      auto morphology = morphologiesVector[ i ];
+
+#else
+
+    for( auto morphology : morphologiesVector )
+    {
+
+#endif
+
+      nsol::Simplifier::Instance( )->simplify(
+        morphology, nsol::Simplifier::DIST_NODES_RADIUS );
+
+      auto mesh = nlgenerator::MeshGenerator::generateMesh( morphology );
+
+      mesh->uploadGPU( _attribsFormat, nlgeometry::Facet::PATCHES );
+      mesh->clearCPUData( );
+
+      _neuronMeshes[ morphology ] = mesh;
+
     }
   }
 

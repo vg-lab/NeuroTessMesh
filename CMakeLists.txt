@@ -53,6 +53,12 @@ common_find_package(nsol REQUIRED)
 common_find_package(ReTo REQUIRED)
 common_find_package(neurolots REQUIRED)
 
+common_find_package( OpenMP )
+
+if ( OPENMP_FOUND )
+  list( APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES OpenMP )
+endif ( )
+
 list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Eigen3 GLEW nsol ReTo neurolots)
 
 common_find_package_post( )
