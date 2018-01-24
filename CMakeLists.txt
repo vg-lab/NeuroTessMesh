@@ -5,8 +5,8 @@
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-project(neurotessmesh VERSION 0.0.0)
-set(neurotessmesh_VERSION_ABI 0)
+project(neurotessmesh VERSION 0.0.1)
+set(neurotessmesh_VERSION_ABI 1)
 
 # Disable in source building
 if( "${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}" )
@@ -44,16 +44,28 @@ set( COMMON_PROJECT_DOMAIN gmrv.es)
 
 include(Common)
 
-common_find_package(Qt5Core 5.4 SYSTEM )
-common_find_package(Qt5Widgets 5.4 SYSTEM )
-common_find_package(Qt5OpenGL 5.4 SYSTEM )
-common_find_package(Eigen3 REQUIRED SYSTEM)
-common_find_package(GLEW REQUIRED SYSTEM)
-common_find_package(nsol REQUIRED)
-common_find_package(ReTo REQUIRED)
+common_find_package(Qt5Core 5.4 SYSTEM REQUIRED)
+common_find_package(Qt5Widgets 5.4 SYSTEM REQUIRED)
+common_find_package(Qt5OpenGL 5.4 SYSTEM REQUIRED)
+common_find_package(Eigen3 SYSTEM REQUIRED)
+common_find_package(GLEW SYSTEM REQUIRED)
 common_find_package(neurolots REQUIRED)
+common_find_package(Lexis ${NEUROTESSMESH_OPTS_FIND_ARGS})
+common_find_package(ZeroEQ ${NEUROTESSMESH_OPTS_FIND_ARGS})
+common_find_package(gmrvlex ${NEUROTESSMESH_OPTS_FIND_ARGS})
 
-list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Eigen3 GLEW nsol ReTo neurolots)
+list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Qt5Core Qt5Widget Qt5OpenGL GLEW neurolots)
+
+if ( ZEROEQ_FOUND )
+  common_find_package(Threads REQUIRED)
+  list( APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES ZeroEQ )
+  if ( LEXIS_FOUND )
+    list( APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Lexis )
+  endif( )
+  if ( GMRVLEX_FOUND )
+    list( APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES gmrvlex )
+  endif( )
+endif( )
 
 common_find_package_post( )
 

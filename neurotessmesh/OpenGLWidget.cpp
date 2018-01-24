@@ -37,6 +37,10 @@ OpenGLWidget::OpenGLWidget( QWidget* parent_,
   , _fpsLabel( this )
   , _showFps( false )
   , _frameCount( 0 )
+#ifdef NEUROTESSMESH_USE_LEXIS
+  , _subscriber( nullptr )
+  , _subscriberThread( nullptr )
+#endif
 {
   _camera = new reto::Camera( );
   _cameraTimer = new QTimer( );
@@ -107,6 +111,72 @@ void OpenGLWidget::home( void )
   _scene->home( );
   update( );
 }
+
+void OpenGLWidget::setZeqSession( const std::string&
+
+#ifdef NEUROTESSMESH_USE_LEXIS
+                                  session_
+  )
+{
+  if ( !session_.empty( ))
+  {
+    if ( _camera )
+      delete _camera;
+    _camera = new reto::Camera( session_ );
+
+    if ( _subscriberThread )
+    {
+      delete _subscriberThread;
+      delete _subscriber;
+    }
+
+    try
+    {
+    _subscriber = new zeroeq::Subscriber( session_ );
+
+    _subscriber->subscribe(
+      lexis::data::SelectedIDs::ZEROBUF_TYPE_IDENTIFIER( ),
+      [&]( const void* selectedData, size_t selectedSize )
+      { _onSelectionEvent( lexis::data::SelectedIDs::create(
+                             selectedData, selectedSize ));});
+
+#ifdef NEUROTESSMESH_USE_GMRVLEX
+    _subscriber->subscribe(
+      zeroeq::gmrv::FocusedIDs::ZEROBUF_TYPE_IDENTIFIER( ),
+      [&]( const void* focusedData, size_t focusedSize )
+      { _onFocusEvent( zeroeq::gmrv::FocusedIDs::create(
+                             focusedData, focusedSize ));});
+#endif
+
+    _subscriberThread =
+      new std::thread( [&](){
+          try
+          {
+            while ( true )
+              _subscriber->receive( 10000 );
+          }
+          catch( ... )
+          {
+            std::cerr << "Connexion closed" << std::endl;
+          }
+        });
+
+    }
+    catch ( ... )
+    {
+      std::cerr << "Zeroeq Session Error: could not connect to " << session_
+                << " session" << std::endl;
+    }
+  }
+}
+
+#else
+
+  )
+{
+  std::cerr << "Zeq not supported " << std::endl;
+}
+#endif
 
 void OpenGLWidget::changeClearColor( QColor color )
 {
@@ -445,3 +515,23 @@ void OpenGLWidget::keyPressEvent( QKeyEvent* event_ )
     break;
   }
 }
+
+#ifdef NEUROTESSMESH_USE_LEXIS
+void OpenGLWidget::_onSelectionEvent(
+  lexis::data::ConstSelectedIDsPtr selectedIndices_ )
+{
+  std::vector<unsigned int> selectedIndices = selectedIndices_->getIdsVector( );
+  _scene->changeSelectedIndices( selectedIndices );
+  update( );
+}
+#endif
+
+#ifdef NEUROTESSMESH_USE_GMRVLEX
+void OpenGLWidget::_onFocusEvent(
+  zeroeq::gmrv::ConstFocusedIDsPtr focusIndices_ )
+{
+  std::vector<unsigned int> focusedIndices = focusIndices_->getIdsVector( );
+  _scene->focusOnIndices( focusedIndices );
+  update( );
+}
+#endif

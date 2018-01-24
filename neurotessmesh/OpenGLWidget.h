@@ -21,6 +21,15 @@
 #include <reto/reto.h>
 #include "Scene.h"
 
+#ifdef NEUROTESSMESH_USE_LEXIS
+#include <zeroeq/zeroeq.h>
+#include <thread>
+#include <lexis/lexis.h>
+#ifdef NEUROTESSMESH_USE_GMRVLEX
+#include <gmrvlex/gmrvlex.h>
+#endif
+#endif
+
 class OpenGLWidget
   : public QOpenGLWidget
   , public QOpenGLFunctions
@@ -53,6 +62,8 @@ public:
 
   void home( void );
 
+  void setZeqSession( const std::string& session_ );
+
 public slots:
 
   void changeClearColor( QColor color );
@@ -74,6 +85,15 @@ public slots:
   void changeSelectedNeuronPiece( int index_ );
 
 protected:
+
+#ifdef NEUROTESSMESH_USE_LEXIS
+  void _onSelectionEvent( lexis::data::ConstSelectedIDsPtr selectedIndices_ );
+
+#ifdef NEUROTESSMESH_USE_GMRVLEX
+  void _onFocusEvent( zeroeq::gmrv::ConstFocusedIDsPtr focusIndices_ );
+#endif
+
+#endif
 
   virtual void initializeGL( void );
   virtual void paintGL( void );
@@ -106,6 +126,13 @@ protected:
   QString _lastSavedFileName;
 
   const static float _colorFactor;
+
+#ifdef NEUROTESSMESH_USE_LEXIS
+    zeroeq::Subscriber* _subscriber;
+
+    std::thread* _subscriberThread;
+#endif
+
 };
 
 #endif // __NEUROTESSMESH__OPENGLWIDGET__

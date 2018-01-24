@@ -69,7 +69,7 @@ MainWindow::~MainWindow( void )
     delete _ui;
 }
 
-void MainWindow::init( void )
+void MainWindow::init( const std::string& zeqSession_ )
 {
 
   _openGLWidget = new OpenGLWidget( 0, 0 );
@@ -83,8 +83,8 @@ void MainWindow::init( void )
   }
 
   _openGLWidget->idleUpdate( _ui->actionUpdateOnIdle->isChecked( ));
-
-  // _openGLWidget->createNeuronsCollection( zeqSession );
+  if ( !zeqSession_.empty( ))
+    _openGLWidget->setZeqSession( zeqSession_ );
 
   connect( _ui->actionHome, SIGNAL( triggered( )),
            this, SLOT( home( )));
@@ -115,7 +115,6 @@ void MainWindow::init( void )
 
   connect( _lotSlider, SIGNAL( valueChanged( int )),
            _openGLWidget, SLOT( onLotValueChanged( int )));
-
   _lotSlider->valueChanged( _lotSlider->value( ));
 
   connect( _distanceSlider, SIGNAL( valueChanged( int )),
@@ -143,7 +142,7 @@ void MainWindow::init( void )
 
   connect( _neuronRender, SIGNAL( currentIndexChanged( int )),
            _openGLWidget, SLOT( changeNeuronPiece( int )));
-  _neuronRender->currentIndexChanged( 0 );
+  _neuronRender->setCurrentIndex( 1 );
 
   connect( _selectedNeuronRender, SIGNAL( currentIndexChanged( int )),
            _openGLWidget, SLOT( changeSelectedNeuronPiece( int )));
