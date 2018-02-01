@@ -211,9 +211,10 @@ namespace neurotessmesh
                                        nsol::MiniColumn,
                                        nsol::Column >( );
       }
-      catch( ... )
+      catch( const std::exception &excep )
       {
         std::cerr << "Error: can't load file: " << fileName_ << std::endl;
+        std::cerr << excep.what( ) << std::endl;
         exit(-1);
       }
 #else
