@@ -48,6 +48,17 @@ set( NEUROTESSMESH_LINK_LIBRARIES
   nlrender
   )
 
+
+if ( ZEROEQ_FOUND )
+  list( APPEND NEUROTESSMESH_LINK_LIBRARIES ZeroEQ )
+  if ( LEXIS_FOUND )
+    list( APPEND NEUROTESSMESH_LINK_LIBRARIES Lexis )
+  endif( )
+  if ( GMRVLEX_FOUND )
+    list( APPEND NEUROTESSMESH_LINK_LIBRARIES gmrvlex )
+  endif( )
+endif( )
+
 include_directories(
   ${PROJECT_BINARY_DIR}/include
   ${PROJECT_BINARY_DIR}/neurotessmesh

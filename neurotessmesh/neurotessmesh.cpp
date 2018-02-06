@@ -31,10 +31,10 @@ bool atLeastTwo( bool a, bool b, bool c );
 int main( int argc, char** argv )
 {
 
-// #ifndef _WINDOWS
-//   //WAR for Brion swc reader
-//   setenv("LANG", "C", 1);
-// #endif
+#ifndef _WINDOWS
+  //WAR for Brion swc reader
+  setenv("LANG", "C", 1);
+#endif
 
   QApplication application(argc,argv);
 
@@ -68,7 +68,7 @@ int main( int argc, char** argv )
     }
     if( std::strcmp( argv[ i ], "-zeroeq" ) == 0 )
     {
-#ifdef NEUROLOTS_USE_ZEROEQ
+#ifdef NEUROTESSMESH_USE_ZEROEQ
       if( ++i < argc )
       {
         zeqUri = std::string( argv[ i ]);
@@ -179,8 +179,8 @@ int main( int argc, char** argv )
       mainWindow->showFullScreen( );
 
     mainWindow->show( );
-    mainWindow->init( );
-
+    mainWindow->init( zeqUri );
+   
     if ( atLeastTwo( !blueConfig.empty( ),
                      !swcFile.empty( ),
                      !sceneFile.empty( )))

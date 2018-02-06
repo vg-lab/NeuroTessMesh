@@ -202,6 +202,11 @@ namespace neurotessmesh
     NEUROTESSMESH_API
     void conformRenderTuples( void );
 
+    NEUROTESSMESH_API
+    void changeSelectedIndices( const std::vector< unsigned int >& indices_ );
+
+    NEUROTESSMESH_API
+    void focusOnIndices( const std::vector< unsigned int >& indices_ );
   protected:
 
     //! Scene mode
@@ -252,7 +257,6 @@ namespace neurotessmesh
 
     //! Scene bonunding box
     nlgeometry::AxisAlignedBoundingBox _boundingBox;
-
   };
 
 }

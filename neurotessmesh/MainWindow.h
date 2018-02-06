@@ -38,7 +38,7 @@ public:
                        bool updateOnIdle_ = false );
   ~MainWindow( void );
 
-  void init( void );
+  void init( const std::string& zeqSession_ );
 
   void showStatusBarMessage ( const QString& message );
 

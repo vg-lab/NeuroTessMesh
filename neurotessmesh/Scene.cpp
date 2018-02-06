@@ -77,6 +77,10 @@ namespace neurotessmesh
                          std::get<1>( _unselectedNeurons ),
                          _unselectedColor , _paintUnselectedSoma,
                          _paintUnselectedNeurites );
+      _renderer->render( std::get<0>( _selectedNeurons ),
+                         std::get<1>( _selectedNeurons ),
+                         _selectedColor , _paintSelectedSoma,
+                         _paintSelectedNeurites );
       break;
     case EDITION:
       if ( isEditNeuronMeshExtraction( ))
@@ -165,8 +169,10 @@ namespace neurotessmesh
       auto morphology = neuronIt.second->morphology( );
       if ( _neuronMeshes.find( morphology ) == _neuronMeshes.end( ))
       {
-        nsol::Simplifier::Instance( )->simplify(
-          morphology, nsol::Simplifier::DIST_NODES_RADIUS );
+        auto simplifier = nsol::Simplifier::Instance( );
+        simplifier->adaptSoma( morphology );
+        simplifier->simplify( morphology, nsol::Simplifier::DIST_NODES_RADIUS );
+
         auto mesh = nlgenerator::MeshGenerator::generateMesh( morphology );
         mesh->uploadGPU( _attribsFormat, nlgeometry::Facet::PATCHES );
         mesh->clearCPUData( );
@@ -185,11 +191,11 @@ namespace neurotessmesh
     )
   {
     close( );
-    switch( fileType_ )
-    {
-    case TDataFileType::BlueConfig:
+    try{
+      switch( fileType_ )
+      {
+      case TDataFileType::BlueConfig:
 #ifdef NSOL_USE_BRION
-      try{
         _dataSet->loadBlueConfigHierarchy< nsol::Node,
                                            nsol::NeuronMorphologySection,
                                            nsol::Dendrite,
@@ -210,41 +216,39 @@ namespace neurotessmesh
                                        nsol::Neuron,
                                        nsol::MiniColumn,
                                        nsol::Column >( );
-      }
-      catch( const std::exception &excep )
-      {
-        std::cerr << "Error: can't load file: " << fileName_ << std::endl;
-        std::cerr << excep.what( ) << std::endl;
-        exit(-1);
-      }
 #else
-    std::cerr << "Error: Brion support not built-in" << std::endl;
+        std::cerr << "Error: Brion support not built-in" << std::endl;
 #endif
-      break;
+        break;
 
-    case TDataFileType::SWC:
-      _dataSet->loadNeuronFromFile< nsol::Node,
-                                    nsol::NeuronMorphologySection,
-                                    nsol::Dendrite,
-                                    nsol::Axon,
-                                    nsol::Soma,
-                                    nsol::NeuronMorphology,
-                                    nsol::Neuron >( fileName_, 1 );
-      break;
+      case TDataFileType::SWC:
+        _dataSet->loadNeuronFromFile< nsol::Node,
+                                      nsol::NeuronMorphologySection,
+                                      nsol::Dendrite,
+                                      nsol::Axon,
+                                      nsol::Soma,
+                                      nsol::NeuronMorphology,
+                                      nsol::Neuron >( fileName_, 1 );
+        break;
 
-    case TDataFileType::NsolScene:
-      _dataSet->loadXmlScene< nsol::Node,
-                              nsol::NeuronMorphologySection,
-                              nsol::Dendrite,
-                              nsol::Axon,
-                              nsol::Soma,
-                              nsol::NeuronMorphology,
-                              nsol::Neuron >( fileName_ );
-      break;
+      case TDataFileType::NsolScene:
+        _dataSet->loadXmlScene< nsol::Node,
+                                nsol::NeuronMorphologySection,
+                                nsol::Dendrite,
+                                nsol::Axon,
+                                nsol::Soma,
+                                nsol::NeuronMorphology,
+                                nsol::Neuron >( fileName_ );
+        break;
 
-    default:
-      throw std::runtime_error( "Data file type not supported" );
-
+      default:
+        throw std::runtime_error( "Data file type not supported" );
+      }
+    }
+    catch( const std::exception &excep )
+    {
+      std::cerr << "Error: can't load file: " << fileName_ << std::endl;
+      std::cerr << excep.what( ) << std::endl;
     }
     generateMeshes( );
     _boundingBox = computeBoundingBox( );
@@ -405,4 +409,26 @@ namespace neurotessmesh
     _selectedNeurons = std::make_tuple( selectedMeshes, selectedModels );
   }
 
+  void Scene::changeSelectedIndices(
+    const std::vector< unsigned int >& indices_ )
+  {
+    _selectedIndices = std::set< unsigned int >(
+      indices_.begin( ), indices_.end( ));
+    conformRenderTuples( );
+  }
+
+  void Scene::focusOnIndices( const std::vector< unsigned int >& indices_ )
+  {
+    if ( indices_.size( ) > 0 )
+    {
+      auto aabb = computeBoundingBox( indices_ );
+      _camera->targetPivot( aabb.center( ));
+      _camera->targetRadius( aabb.radius( ) / sin( _camera->fov( )));
+    }
+    else
+    {
+      _camera->targetPivot( _boundingBox.center( ));
+      _camera->targetRadius( _boundingBox.radius( ) / sin( _camera->fov( )));
+    }
+  }
 }
