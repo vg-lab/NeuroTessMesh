@@ -15,6 +15,21 @@ Ubuntu-OptionalDeps:
  tags:
   - ubuntu
 
+Ubuntu-Subproject-master:
+ stage: build
+ script:
+  - date
+  - hostname
+  - uname -a
+  - export CMAKE_EXTRA_ARGS="-DCLONE_SUBPROJECTS=ON"
+  - export BUILD_GENERATOR="Ninja"
+  - export GITHUB_MIRROR_URL="git@github.com:gmrvvis/NeuroTessMesh"
+  - bash .gitlab-ci.sh
+ only:
+  - master
+ tags:
+  - ubuntu
+
 Ubuntu-Subproject:
  stage: build
  script:
