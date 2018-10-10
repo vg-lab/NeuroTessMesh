@@ -27,6 +27,10 @@
 #include <QScrollArea>
 #include <QGridLayout>
 
+#define SIMULATION_TOTAL_TIME 120000
+#define SIMULATION_STEP 100
+#define LIVE_STEPS 20
+
 
 MainWindow::MainWindow( QWidget* parent_, bool updateOnIdle_ )
   : QMainWindow( parent_ )
@@ -62,6 +66,13 @@ MainWindow::MainWindow( QWidget* parent_, bool updateOnIdle_ )
   _initExtractionDock( );
   _initConfigurationDock( );
   _initRenderOptionsDock( );
+  _initSimulationPlayerDock( );
+
+  _simTimerUpdate = new QTimer( this );
+  connect( _simTimerUpdate, SIGNAL( timeout( )),
+           this, SLOT( updateSimulation( )));
+
+  _simTimerUpdate->start( SIMULATION_STEP );
 }
 
 MainWindow::~MainWindow( void )
@@ -130,15 +141,15 @@ void MainWindow::init( const std::string& zeqSession_ )
 
   connect( _backGroundColor, SIGNAL( colorChanged( QColor )),
            _openGLWidget, SLOT( changeClearColor( QColor )));
-  _backGroundColor->color( QColor( 255, 255, 255 ));
+  _backGroundColor->color( QColor( 0, 0, 0 ));
 
   connect( _neuronColor, SIGNAL( colorChanged( QColor )),
            _openGLWidget, SLOT( changeNeuronColor( QColor )));
-  _neuronColor->color( QColor( 0, 120, 250 ));
+  _neuronColor->color( QColor( 59, 60, 79 ));
 
   connect( _selectedNeuronColor, SIGNAL( colorChanged( QColor )),
            _openGLWidget, SLOT( changeSelectedNeuronColor( QColor )));
-  _selectedNeuronColor->color( QColor( 250, 120, 0 ));
+  _selectedNeuronColor->color( QColor( 0, 255, 0 ));
 
   connect( _neuronRender, SIGNAL( currentIndexChanged( int )),
            _openGLWidget, SLOT( changeNeuronPiece( int )));
@@ -160,6 +171,14 @@ void MainWindow::openBlueConfig( const std::string& fileName,
   _openGLWidget->loadData( fileName,
                            neurotessmesh::Scene::TDataFileType::BlueConfig,
                            targetLabel );
+  _simPlayerWidget->init( fileName.c_str( ),
+                          simil::TSimulationType::TSimSpikes );
+  _simPlayer = dynamic_cast< simil::SpikesPlayer*>(
+    _simPlayerWidget->getSimulationPlayer( ));
+  _simStartTime = _simPlayer->startTime( );
+  _simEndTime = _simPlayer->endTime( );
+  _simPlayer->deltaTime( (_simEndTime - _simStartTime)/
+                         ( SIMULATION_TOTAL_TIME / SIMULATION_STEP) );
   updateNeuronList( );
 }
 
@@ -343,6 +362,14 @@ void MainWindow::updateRenderOptionsDock( void )
     _renderOptionsDock->close( );
 }
 
+void MainWindow::updateSimulationPlayerDock( void )
+{
+  if( _ui->actionSimulationPlayer->isChecked( ))
+    _simulationPlayerDock->show( );
+  else
+    _simulationPlayerDock->close( );
+}
+
 
 void MainWindow::onListClicked( QListWidgetItem* item )
 {
@@ -366,6 +393,19 @@ void MainWindow::onActionGenerate( int /*value_*/ )
   }
 
   _openGLWidget->regenerateNeuronToEdit( alphaRadius, alphaNeurites );
+}
+
+void MainWindow::updateSimulation( void )
+{
+  _simPlayerWidget->update( );
+  if ( _simPlayer && _simPlayerWidget->isPlaying( ))
+  {
+    auto spikesRange = _simPlayer->spikesNow( );
+    _openGLWidget->updateNeuronsState( spikesRange, _simPlayer->currentTime( ),
+                                       SIMULATION_STEP * 0.001 * LIVE_STEPS );
+  }
+  // _simPlayerWidget->updateSimulationSlider( _simPlayerWidget->getPercentage( ) );
+  _simTimerUpdate->start( SIMULATION_STEP );
 }
 
 void MainWindow::_generateNeuritesLayout( void )
@@ -605,7 +645,7 @@ void MainWindow::_initRenderOptionsDock( void )
   _neuronColor = new ColorSelectionWidget( this );
   gridbox->addWidget( _neuronColor, 1, 1 );
 
-  gridbox->addWidget( new QLabel( QString("Selected neuron color")), 2, 0);
+  gridbox->addWidget( new QLabel( QString("Active neuron color")), 2, 0);
   _selectedNeuronColor = new ColorSelectionWidget( this );
   gridbox->addWidget( _selectedNeuronColor, 2, 1 );
 
@@ -627,7 +667,7 @@ void MainWindow::_initRenderOptionsDock( void )
   _selectedNeuronRender = new QComboBox( );
   _selectedNeuronRender->setSizePolicy( QSizePolicy(QSizePolicy::Fixed,
                                                     QSizePolicy::Fixed));
-  vbox->addWidget( new QLabel( QString( "Selected neuron" )));
+  vbox->addWidget( new QLabel( QString( "Active neuron" )));
   vbox->addWidget( _selectedNeuronRender );
   _selectedNeuronRender->addItem( QString( "all" ));
   _selectedNeuronRender->addItem( QString( "soma" ));
@@ -637,4 +677,30 @@ void MainWindow::_initRenderOptionsDock( void )
            _ui->actionRenderOptions, SLOT( setChecked( bool )));
   connect( _ui->actionRenderOptions, SIGNAL( triggered( )),
            this, SLOT( updateRenderOptionsDock( )));
+}
+
+void MainWindow::_initSimulationPlayerDock( )
+{
+  _simulationPlayerDock = new QDockWidget( );
+
+  this->addDockWidget( Qt::DockWidgetAreas::enum_type::BottomDockWidgetArea,
+                       _simulationPlayerDock, Qt::Horizontal );
+
+  _simulationPlayerDock->setSizePolicy(QSizePolicy::Fixed,
+                                    QSizePolicy::Fixed);
+  _simulationPlayerDock->setFeatures(QDockWidget::DockWidgetClosable |
+                           QDockWidget::DockWidgetMovable |
+                           QDockWidget::DockWidgetFloatable);
+  _simulationPlayerDock->setWindowTitle( QString( "Simulation Player" ));
+  _simulationPlayerDock->setMinimumSize( 200, 200 );
+
+  _simulationPlayerDock->close( );
+
+  _simPlayerWidget = new qsimil::QSimulationPlayer( this );
+  _simulationPlayerDock->setWidget( _simPlayerWidget );
+
+  connect( _simulationPlayerDock->toggleViewAction( ), SIGNAL( toggled( bool )),
+           _ui->actionSimulationPlayer, SLOT( setChecked( bool )));
+  connect( _ui->actionSimulationPlayer, SIGNAL( triggered( )),
+           this, SLOT( updateSimulationPlayerDock( )));
 }

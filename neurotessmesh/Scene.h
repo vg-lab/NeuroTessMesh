@@ -27,6 +27,7 @@
 #include <nlgeometry/nlgeometry.h>
 #include <nlrender/nlrender.h>
 
+#include <qsimil/qsimil.h>
 #include <neurotessmesh/api.h>
 
 namespace neurotessmesh
@@ -51,8 +52,8 @@ namespace neurotessmesh
       NsolScene
     } TDataFileType;
 
-    typedef std::tuple< nlgeometry::Meshes, std::vector< Eigen::Matrix4f >>
-      NeuronMeshes;
+    typedef std::tuple< nlgeometry::Meshes, std::vector< Eigen::Matrix4f >,
+                        std::vector< Eigen::Vector3f >> NeuronMeshes;
 
     /**
      * Default constructor
@@ -203,6 +204,9 @@ namespace neurotessmesh
     void conformRenderTuples( void );
 
     NEUROTESSMESH_API
+    void updateNeuronsState( simil::SpikesCRange spikesRange, float currentTime, float lifeTime );
+
+    NEUROTESSMESH_API
     void changeSelectedIndices( const std::vector< unsigned int >& indices_ );
 
     NEUROTESSMESH_API
@@ -234,11 +238,11 @@ namespace neurotessmesh
     std::unordered_map< nsol::MorphologyPtr, nlgeometry::MeshPtr >
     _neuronMeshes;
 
-    //! Unselected neuron meshes
-    NeuronMeshes _unselectedNeurons;
+    //! Neuron meshes
+    NeuronMeshes _neurons;
 
-    //! Selected neuron meshes
-    NeuronMeshes _selectedNeurons;
+    //! Activated neuron meshes
+    NeuronMeshes _activatedNeurons;
 
     //! List of selected indices
     std::set< unsigned int > _selectedIndices;
@@ -257,6 +261,11 @@ namespace neurotessmesh
 
     //! Scene bonunding box
     nlgeometry::AxisAlignedBoundingBox _boundingBox;
+
+    std::unordered_map< unsigned int, float > _neuronsLifeTime;
+
+    float _currentTime;
+    float _lifeTime;
   };
 
 }

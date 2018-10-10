@@ -46,6 +46,9 @@ set( NEUROTESSMESH_LINK_LIBRARIES
   nlgeometry
   nlgenerator
   nlrender
+  SimIL
+  QSimIL
+  scoop
   )
 
 

@@ -50,11 +50,14 @@ common_find_package(Qt5OpenGL 5.4 SYSTEM REQUIRED)
 common_find_package(Eigen3 SYSTEM REQUIRED)
 common_find_package(GLEW SYSTEM REQUIRED)
 common_find_package(neurolots REQUIRED)
+common_find_package(SimIL REQUIRED)
+common_find_package(scoop REQUIRED)
 common_find_package(Lexis ${NEUROTESSMESH_OPTS_FIND_ARGS})
 common_find_package(ZeroEQ ${NEUROTESSMESH_OPTS_FIND_ARGS})
 common_find_package(gmrvlex ${NEUROTESSMESH_OPTS_FIND_ARGS})
 
-list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Qt5Core Qt5Widget Qt5OpenGL GLEW neurolots)
+list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Qt5Core Qt5Widget Qt5OpenGL GLEW
+  neurolots SimIL scoop)
 
 if ( ZEROEQ_FOUND )
   common_find_package(Threads REQUIRED)

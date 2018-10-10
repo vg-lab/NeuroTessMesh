@@ -55,6 +55,7 @@
     <addaction name="actionRenderOptions"/>
     <addaction name="actionEditSave"/>
     <addaction name="actionConfiguration"/>
+    <addaction name="actionSimulationPlayer"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuOptions"/>
@@ -81,6 +82,7 @@
    <addaction name="actionWireframe"/>
    <addaction name="actionCloseData"/>
    <addaction name="actionRenderOptions"/>
+   <addaction name="actionSimulationPlayer"/>
   </widget>
   <action name="actionQuit">
    <property name="text">
@@ -277,6 +279,20 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+C</string>
+   </property>
+  </action><action name="actionSimulationPlayer">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../qrc/resources.qrc">
+     <normaloff>:/icons/simPlayer.svg</normaloff>:/icons/simPlayer.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Simulation Player</string>
+   </property>
+   <property name="toolTip">
+    <string>Simulation Player</string>
    </property>
   </action>
  </widget>

@@ -64,6 +64,13 @@ public:
 
   void setZeqSession( const std::string& session_ );
 
+  void updateNeuronsState( simil::SpikesCRange spikesRange,
+                           float currentTime, float lifeTime )
+  {
+    _scene->updateNeuronsState( spikesRange, currentTime, lifeTime );
+    update( );
+  }
+
 public slots:
 
   void changeClearColor( QColor color );

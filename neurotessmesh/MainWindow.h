@@ -14,6 +14,7 @@
 #include "ColorSelectionWidget.h"
 
 
+
 #include <QDockWidget>
 #include <QListWidget>
 #include <QVBoxLayout>
@@ -60,8 +61,10 @@ public slots:
   void updateExtractMeshDock( void );
   void updateConfigurationDock( void );
   void updateRenderOptionsDock( void );
+  void updateSimulationPlayerDock( void );
   void onListClicked( QListWidgetItem *item );
   void onActionGenerate( int value_ );
+  void updateSimulation( void );
 
 protected:
 
@@ -73,6 +76,7 @@ private:
   void _initExtractionDock( void );
   void _initConfigurationDock( void );
   void _initRenderOptionsDock( void );
+  void _initSimulationPlayerDock( void );
 
   Ui::MainWindow* _ui;
   OpenGLWidget* _openGLWidget;
@@ -80,6 +84,10 @@ private:
   QDockWidget* _extractMeshDock;
   QDockWidget* _configurationDock;
   QDockWidget* _renderOptionsDock;
+  QDockWidget* _simulationPlayerDock;
+
+  qsimil::QSimulationPlayer* _simPlayerWidget;
+  simil::SpikesPlayer* _simPlayer;
 
   QListWidget* _neuronList;
   QSlider* _radiusSlider;
@@ -100,4 +108,11 @@ private:
 
   QComboBox* _neuronRender;
   QComboBox* _selectedNeuronRender;
+
+  QTimer* _simTimerUpdate;
+
+  float _simStartTime;
+  float _simEndTime;
+
+  
 };

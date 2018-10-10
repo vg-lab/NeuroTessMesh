@@ -22,6 +22,7 @@
 #include "Scene.h"
 
 #include <nlgenerator/nlgenerator.h>
+#include <scoop/scoop.h>
 
 namespace neurotessmesh
 {
@@ -38,6 +39,8 @@ namespace neurotessmesh
     , _editNeuron( nullptr )
     , _editMesh( nullptr )
     , _boundingBox( Eigen::Vector3f::Zero( ), Eigen::Vector3f::Zero( ))
+    , _currentTime( 0.0f )
+    , _lifeTime( 0.0f )
   {
     _attribsFormat.resize( 3 );
     _attribsFormat[0] = nlgeometry::TAttribType::POSITION;
@@ -73,13 +76,15 @@ namespace neurotessmesh
     switch( _mode )
     {
     case VISUALIZATION:
-      _renderer->render( std::get<0>( _unselectedNeurons ),
-                         std::get<1>( _unselectedNeurons ),
-                         _unselectedColor , _paintUnselectedSoma,
+      _renderer->render( std::get<0>( _neurons ),
+                         std::get<1>( _neurons ),
+                         std::get<2>( _neurons ),
+                         _paintUnselectedSoma,
                          _paintUnselectedNeurites );
-      _renderer->render( std::get<0>( _selectedNeurons ),
-                         std::get<1>( _selectedNeurons ),
-                         _selectedColor , _paintSelectedSoma,
+      _renderer->render( std::get<0>( _activatedNeurons ),
+                         std::get<1>( _activatedNeurons ),
+                         std::get<2>( _activatedNeurons ),
+                         _paintSelectedSoma,
                          _paintSelectedNeurites );
       break;
     case EDITION:
@@ -101,10 +106,13 @@ namespace neurotessmesh
       delete neuronMesh.second;
     _neuronMeshes.clear( );
 
-    std::get<0>( _unselectedNeurons ).clear( );
-    std::get<1>( _unselectedNeurons ).clear( );
-    std::get<0>( _selectedNeurons ).clear( );
-    std::get<1>( _selectedNeurons ).clear( );
+    std::get<0>( _neurons ).clear( );
+    std::get<1>( _neurons ).clear( );
+    std::get<2>( _neurons ).clear( );
+
+    std::get<0>( _activatedNeurons ).clear( );
+    std::get<1>( _activatedNeurons ).clear( );
+    std::get<2>( _activatedNeurons ).clear( );
 
     _dataSet->close( );
     mode( Scene::VISUALIZATION );
@@ -282,11 +290,13 @@ namespace neurotessmesh
   void Scene::unselectedNeuronColor( Eigen::Vector3f color_ )
   {
     _unselectedColor = color_;
+    conformRenderTuples( );
   }
 
   void Scene::selectedNeuronColor( Eigen::Vector3f color_ )
   {
     _selectedColor = color_;
+    conformRenderTuples( );
   }
 
   void Scene::levelOfDetail( float lod_ )
@@ -383,30 +393,80 @@ namespace neurotessmesh
 
   void Scene::conformRenderTuples( void )
   {
-    nlgeometry::Meshes unselectedMeshes;
-    std::vector< Eigen::Matrix4f > unselectedModels;
-    nlgeometry::Meshes selectedMeshes;
-    std::vector< Eigen::Matrix4f > selectedModels;
+    nlgeometry::Meshes neuronMeshes;
+    std::vector< Eigen::Matrix4f > neuronModels;
+    std::vector< Eigen::Vector3f > neuronColors;
+
+    nlgeometry::Meshes activatedNeuronMeshes;
+    std::vector< Eigen::Matrix4f > activatedNeuronModels;
+    std::vector< Eigen::Vector3f > activatedNeuronColors;
+
+    scoop::Color sColor, usColor;
+    sColor.setRgbF( _selectedColor.x( ), _selectedColor.y( ),
+                    _selectedColor.z( ));
+    usColor.setRgbF( _unselectedColor.x( ), _unselectedColor.y( ),
+                     _unselectedColor.z( ));
+    scoop::SequentialColorMap colorMap(
+      0.0f, sColor ,
+      1.0f, usColor );
     for ( const auto neuronIt: _dataSet->neurons( ))
     {
       auto neuron = neuronIt.second;
       auto meshIt = _neuronMeshes.find( neuron->morphology( ));
       if ( meshIt != _neuronMeshes.end( ))
       {
-        if ( _selectedIndices.find( neuronIt.first ) != _selectedIndices.end( ))
+        if ( _neuronsLifeTime.find( neuronIt.first ) != _neuronsLifeTime.end( ))
         {
-          selectedMeshes.push_back( meshIt->second );
-          selectedModels.push_back( neuron->transform( ));
+          float neuronTime = _neuronsLifeTime[ neuronIt.first ];
+          float alpha =  ( _currentTime - neuronTime )/ _lifeTime;
+          if ( alpha < 0.0  )
+            alpha = 0.0;
+
+          auto color = colorMap.getColor(
+            alpha, scoop::SequentialColorMap::HSV_INTERPOLATION );
+          Eigen::Vector3f vcolor(
+            color.redF( ), color.greenF( ), color.blueF( ));
+
+          activatedNeuronMeshes.push_back( meshIt->second );
+          activatedNeuronModels.push_back( neuron->transform( ));
+          activatedNeuronColors.push_back( vcolor );
         }
         else
         {
-          unselectedMeshes.push_back( meshIt->second );
-          unselectedModels.push_back( neuron->transform( ));
+          neuronMeshes.push_back( meshIt->second );
+          neuronModels.push_back( neuron->transform( ));
+          neuronColors.push_back( _unselectedColor );
         }
       }
     }
-    _unselectedNeurons = std::make_tuple( unselectedMeshes, unselectedModels );
-    _selectedNeurons = std::make_tuple( selectedMeshes, selectedModels );
+    _neurons = std::make_tuple( neuronMeshes, neuronModels, neuronColors );
+    _activatedNeurons = std::make_tuple(
+      activatedNeuronMeshes, activatedNeuronModels, activatedNeuronColors );
+  }
+
+  void Scene::updateNeuronsState( simil::SpikesCRange spikesRange,
+                                  float currentTime, float lifeTime )
+  {
+    _currentTime = currentTime;
+    _lifeTime = lifeTime;
+    for ( auto neuronIt = _neuronsLifeTime.begin( );
+          neuronIt != _neuronsLifeTime.end( );)
+    {
+      float livedTime = currentTime - neuronIt->second;
+      if ( livedTime >= lifeTime || livedTime < 0.0f )
+      {
+        neuronIt = _neuronsLifeTime.erase( neuronIt );
+      }
+      else
+      {
+        neuronIt++;
+      }
+    }
+    for ( auto it = spikesRange.first; it != spikesRange.second; it++ )
+    {
+      _neuronsLifeTime[it->second] = it->first;
+    }
+    conformRenderTuples( );
   }
 
   void Scene::changeSelectedIndices(
