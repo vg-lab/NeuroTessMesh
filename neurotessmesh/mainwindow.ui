@@ -56,6 +56,7 @@
     <addaction name="actionEditSave"/>
     <addaction name="actionConfiguration"/>
     <addaction name="actionSimulationPlayer"/>
+    <addaction name="actionFrameRecorder"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuOptions"/>
@@ -83,6 +84,7 @@
    <addaction name="actionCloseData"/>
    <addaction name="actionRenderOptions"/>
    <addaction name="actionSimulationPlayer"/>
+   <addaction name="actionFrameRecorder"/>
   </widget>
   <action name="actionQuit">
    <property name="text">
@@ -293,6 +295,21 @@
    </property>
    <property name="toolTip">
     <string>Simulation Player</string>
+   </property>
+ </action>
+ <action name="actionFrameRecorder">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../qrc/resources.qrc">
+     <normaloff>:/icons/record.svg</normaloff>:/icons/record.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Frame Recorder</string>
+   </property>
+   <property name="toolTip">
+    <string>Frame Recorder</string>
    </property>
   </action>
  </widget>

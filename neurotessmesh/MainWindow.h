@@ -62,6 +62,7 @@ public slots:
   void updateConfigurationDock( void );
   void updateRenderOptionsDock( void );
   void updateSimulationPlayerDock( void );
+  void updateFrameRecorderDock( void );
   void onListClicked( QListWidgetItem *item );
   void onActionGenerate( int value_ );
   void updateSimulation( void );
@@ -77,6 +78,7 @@ private:
   void _initConfigurationDock( void );
   void _initRenderOptionsDock( void );
   void _initSimulationPlayerDock( void );
+  void _initFrameRecorderDock( void );
 
   Ui::MainWindow* _ui;
   OpenGLWidget* _openGLWidget;
@@ -85,6 +87,7 @@ private:
   QDockWidget* _configurationDock;
   QDockWidget* _renderOptionsDock;
   QDockWidget* _simulationPlayerDock;
+  QDockWidget* _frameRecorderDock;
 
   qsimil::QSimulationPlayer* _simPlayerWidget;
   simil::SpikesPlayer* _simPlayer;
@@ -114,5 +117,4 @@ private:
   float _simStartTime;
   float _simEndTime;
 
-  
 };

@@ -12,6 +12,7 @@
 #include "MainWindow.h"
 #include <neurotessmesh/version.h>
 #include <nsol/nsol.h>
+#include <reto/reto.h>
 #ifdef NEUROLOTS_USE_GMRVZEQ
 #include <gmrvzeq/version.h>
 #endif
@@ -67,6 +68,7 @@ MainWindow::MainWindow( QWidget* parent_, bool updateOnIdle_ )
   _initConfigurationDock( );
   _initRenderOptionsDock( );
   _initSimulationPlayerDock( );
+  _initFrameRecorderDock( );
 
   _simTimerUpdate = new QTimer( this );
   connect( _simTimerUpdate, SIGNAL( timeout( )),
@@ -368,6 +370,14 @@ void MainWindow::updateSimulationPlayerDock( void )
     _simulationPlayerDock->show( );
   else
     _simulationPlayerDock->close( );
+}
+
+void MainWindow::updateFrameRecorderDock( void )
+{
+  if( _ui->actionFrameRecorder->isChecked( ))
+    _frameRecorderDock->show( );
+  else
+    _frameRecorderDock->close( );
 }
 
 
@@ -703,4 +713,30 @@ void MainWindow::_initSimulationPlayerDock( )
            _ui->actionSimulationPlayer, SLOT( setChecked( bool )));
   connect( _ui->actionSimulationPlayer, SIGNAL( triggered( )),
            this, SLOT( updateSimulationPlayerDock( )));
+}
+
+void MainWindow::_initFrameRecorderDock( )
+{
+  _frameRecorderDock = new QDockWidget( );
+
+  this->addDockWidget( Qt::DockWidgetAreas::enum_type::RightDockWidgetArea,
+                       _frameRecorderDock, Qt::Vertical );
+
+  _frameRecorderDock->setSizePolicy(QSizePolicy::Fixed,
+                                    QSizePolicy::Fixed);
+  _frameRecorderDock->setFeatures(QDockWidget::DockWidgetClosable |
+                                  QDockWidget::DockWidgetMovable |
+                                  QDockWidget::DockWidgetFloatable);
+  _frameRecorderDock->setWindowTitle( QString( "Frame recorder" ));
+  _frameRecorderDock->setMinimumSize( 200, 200 );
+
+  _frameRecorderDock->close( );
+
+  auto frameRecorderWidget = new reto::FrameRecorderWidget( this );
+  _frameRecorderDock->setWidget( frameRecorderWidget );
+
+  connect( _frameRecorderDock->toggleViewAction( ), SIGNAL( toggled( bool )),
+           _ui->actionFrameRecorder, SLOT( setChecked( bool )));
+  connect( _ui->actionFrameRecorder, SIGNAL( triggered( )),
+           this, SLOT( updateFrameRecorderDock( )));
 }
