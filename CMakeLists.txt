@@ -53,6 +53,8 @@ common_find_package(neurolots REQUIRED)
 common_find_package(Lexis ${NEUROTESSMESH_OPTS_FIND_ARGS})
 common_find_package(ZeroEQ ${NEUROTESSMESH_OPTS_FIND_ARGS})
 common_find_package(gmrvlex ${NEUROTESSMESH_OPTS_FIND_ARGS})
+common_find_package(GLUT SYSTEM)
+common_find_package(Boost COMPONENTS system filesystem SYSTEM)
 
 list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Qt5Core Qt5Widget Qt5OpenGL GLEW neurolots)
 
@@ -70,6 +72,8 @@ endif( )
 common_find_package_post( )
 
 add_subdirectory( neurotessmesh )
-
+if (GLUT_FOUND AND BOOST_FOUND)
+  add_subdirectory( neurotessmeshServer )
+endif( )
 include(CPackConfig)
 include(DoxygenRule)
