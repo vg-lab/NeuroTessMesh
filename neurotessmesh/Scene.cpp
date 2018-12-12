@@ -21,6 +21,8 @@
  */
 #include "Scene.h"
 
+#include <unordered_set>
+
 #include <nlgenerator/nlgenerator.h>
 
 namespace neurotessmesh
@@ -164,21 +166,51 @@ namespace neurotessmesh
 
   void Scene::generateMeshes( void )
   {
+    std::unordered_set< nsol::NeuronMorphologyPtr > setMorphs;
     for ( auto neuronIt: _dataSet->neurons( ))
     {
-      auto morphology = neuronIt.second->morphology( );
-      if ( _neuronMeshes.find( morphology ) == _neuronMeshes.end( ))
-      {
-        auto simplifier = nsol::Simplifier::Instance( );
-        simplifier->adaptSoma( morphology );
-        simplifier->simplify( morphology, nsol::Simplifier::DIST_NODES_RADIUS );
-
-        auto mesh = nlgenerator::MeshGenerator::generateMesh( morphology );
-        mesh->uploadGPU( _attribsFormat, nlgeometry::Facet::PATCHES );
-        mesh->clearCPUData( );
-        _neuronMeshes[ morphology ] = mesh;
-      }
+      setMorphs.insert( neuronIt.second->morphology( ));
     }
+    std::vector< nsol::NeuronMorphologyPtr > vMorphologies;
+    vMorphologies.insert( vMorphologies.begin( ), setMorphs.begin( ),
+                          setMorphs.end( ));
+
+    std::chrono::time_point< std::chrono::system_clock > startTime =
+      std::chrono::system_clock::now( );
+
+    std::cout << "Generating " << vMorphologies.size( ) << " morphologies:"
+              << std::endl;
+#ifdef NEUROTESSMESH_USE_OPENMP
+    #pragma omp parallel for
+#endif
+    for ( unsigned int i = 0; i < vMorphologies.size( ); i++ )
+    {
+      auto morphology = vMorphologies[i];
+      auto simplifier = nsol::Simplifier::Instance( );
+      simplifier->adaptSoma( morphology );
+      simplifier->simplify( morphology, nsol::Simplifier::DIST_NODES_RADIUS );
+
+      auto mesh = nlgenerator::MeshGenerator::generateMesh( morphology );
+      mesh->conformAttribs( _attribsFormat, nlgeometry::Facet::PATCHES );
+      _neuronMeshes[ morphology ] = mesh;
+      std::cout << "*"<<std::flush;
+    }
+    std::cout << std::endl;
+
+    for ( auto element: _neuronMeshes )
+    {
+      auto mesh = element.second;
+      mesh->uploadGPU( );
+      mesh->clearCPUData( );
+    }
+
+    std::chrono::time_point< std::chrono::system_clock > endTime =
+      std::chrono::system_clock::now( );
+    auto duration =
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+        endTime - startTime );
+    std::cout << "Mesh generation time: " << duration.count( ) / 1000
+              << " seconds." << std::endl;
   }
 
   void Scene::loadData( const std::string& fileName_,

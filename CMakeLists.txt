@@ -53,10 +53,13 @@ common_find_package(neurolots REQUIRED)
 common_find_package(Lexis ${NEUROTESSMESH_OPTS_FIND_ARGS})
 common_find_package(ZeroEQ ${NEUROTESSMESH_OPTS_FIND_ARGS})
 common_find_package(gmrvlex ${NEUROTESSMESH_OPTS_FIND_ARGS})
-common_find_package(GLUT SYSTEM)
-common_find_package(Boost COMPONENTS system filesystem SYSTEM)
+common_find_package(GLUT SYSTEM ${NEUROTESSMESH_OPTS_FIND_ARGS})
+common_find_package(OpenMP ${NEUROTESSMESH_OPTS_FIND_ARGS})
+common_find_package(Boost COMPONENTS system filesystem SYSTEM
+  ${NEUROTESSMESH_OPTS_FIND_ARGS})
 
-list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Qt5Core Qt5Widget Qt5OpenGL GLEW neurolots)
+list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Qt5Core Qt5Widget Qt5OpenGL GLEW
+  neurolots)
 
 if ( ZEROEQ_FOUND )
   common_find_package(Threads REQUIRED)
@@ -67,6 +70,10 @@ if ( ZEROEQ_FOUND )
   if ( GMRVLEX_FOUND )
     list( APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES gmrvlex )
   endif( )
+endif( )
+
+if ( OPENMP_FOUND )
+  list( APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES OpenMP )
 endif( )
 
 common_find_package_post( )
