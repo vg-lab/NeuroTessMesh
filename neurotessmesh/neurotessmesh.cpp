@@ -165,8 +165,7 @@ int main( int argc, char** argv )
   if ( setFormat( ctxOpenGLMajor, ctxOpenGLMinor,
                   ctxOpenGLSamples, ctxOpenGLVSync ) )
   {
-    MainWindow* mainWindow;
-    mainWindow = new MainWindow( );
+    auto mainWindow = new MainWindow( );
     mainWindow->setWindowTitle("NeuroTessMesh");
 
     if ( initWindowSize )
@@ -331,22 +330,21 @@ bool setFormat( int ctxOpenGLMajor,
 
   QSurfaceFormat format;
   format.setVersion( ctxOpenGLMajor, ctxOpenGLMinor);
-  format.setProfile( QSurfaceFormat::CoreProfile );
 
   if ( ctxOpenGLSamples != 0 )
     format.setSamples( ctxOpenGLSamples );
 
   format.setSwapInterval( ctxOpenGLVSync );
 
-
-  QSurfaceFormat::setDefaultFormat( format );
   if ( std::getenv("CONTEXT_OPENGL_COMPATIBILITY_PROFILE"))
     format.setProfile( QSurfaceFormat::CompatibilityProfile );
   else
     format.setProfile( QSurfaceFormat::CoreProfile );
 
+  QSurfaceFormat::setDefaultFormat( format );
+
   return ( format.majorVersion() >= GL_MINIMUM_REQUIRED_MAJOR ) &&
-    ( format.minorVersion( ) >= GL_MINIMUM_REQUIRED_MINOR );
+         ( format.minorVersion( ) >= GL_MINIMUM_REQUIRED_MINOR );
 }
 
 bool atLeastTwo( bool a, bool b, bool c )

@@ -49,8 +49,8 @@ namespace neurotessmesh
 
   Scene::~Scene( void )
   {
-    delete _renderer;
-    delete _dataSet;
+    if(_renderer) delete _renderer;
+    if(_dataSet)  delete _dataSet;
   }
 
   void Scene::mode( const Scene::TSceneMode mode_ )
@@ -291,12 +291,14 @@ namespace neurotessmesh
 
   void Scene::levelOfDetail( float lod_ )
   {
-    _renderer->lod( ) = lod_;
+    if(_renderer)
+      _renderer->lod( ) = lod_;
   }
 
   void Scene::maximumDistance( float maximumDistance_ )
   {
-    _renderer->maximumDistance( ) = maximumDistance_ * _camera->farPlane( );
+    if(_renderer)
+      _renderer->maximumDistance( ) = maximumDistance_ * _camera->farPlane( );
   }
 
   void Scene::subdivisionCriteria(
