@@ -62,15 +62,6 @@ MainWindow::MainWindow( QWidget* parent_, bool updateOnIdle_ )
   _initExtractionDock( );
   _initConfigurationDock( );
   _initRenderOptionsDock( );
-}
-
-MainWindow::~MainWindow( void )
-{
-    delete _ui;
-}
-
-void MainWindow::init( const std::string& zeqSession_ )
-{
 
   _openGLWidget = new OpenGLWidget( 0, 0 );
   this->setCentralWidget( _openGLWidget );
@@ -81,7 +72,15 @@ void MainWindow::init( const std::string& zeqSession_ )
     std::cerr << "This application requires at least OpenGL 4.0" << std::endl;
     exit( -1 );
   }
+}
 
+MainWindow::~MainWindow( void )
+{
+    delete _ui;
+}
+
+void MainWindow::init( const std::string& zeqSession_ )
+{
   _openGLWidget->idleUpdate( _ui->actionUpdateOnIdle->isChecked( ));
   if ( !zeqSession_.empty( ))
     _openGLWidget->setZeqSession( zeqSession_ );
