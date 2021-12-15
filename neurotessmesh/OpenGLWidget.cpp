@@ -26,6 +26,7 @@ const float OpenGLWidget::_colorFactor = 1 / 255.0f;
 OpenGLWidget::OpenGLWidget( QWidget* parent_,
                             Qt::WindowFlags windowsFlags_ )
   : QOpenGLWidget( parent_, windowsFlags_ )
+  , _scene{nullptr}
   , _mouseX( 0 )
   , _mouseY( 0 )
   , _rotation( false )
@@ -42,7 +43,7 @@ OpenGLWidget::OpenGLWidget( QWidget* parent_,
   , _subscriberThread( nullptr )
 #endif
 {
-  _camera = new reto::Camera( );
+  _camera = new reto::OrbitalCameraController( );
   _cameraTimer = new QTimer( );
   _cameraTimer->start(( 1.0f / 60.f ) * 100 );
   connect( _cameraTimer, SIGNAL( timeout( )), this, SLOT( timerUpdate( )));
@@ -122,7 +123,7 @@ void OpenGLWidget::setZeqSession( const std::string&
   {
     if ( _camera )
       delete _camera;
-    _camera = new reto::Camera( session_ );
+    _camera = new reto::OrbitalCameraController( nullptr, session_ );
 
     if ( _subscriberThread )
     {
@@ -245,8 +246,11 @@ void OpenGLWidget::toggleWireframe( void )
 
 void OpenGLWidget::timerUpdate( void )
 {
-  if( _camera->anim( ))
+  if( _camera->isAniming() )
+  {
+    _camera->anim();
     this->update( );
+  }
 }
 
 void OpenGLWidget::extractEditNeuronMesh( void )
@@ -358,7 +362,6 @@ void OpenGLWidget::initializeGL( void )
   QOpenGLWidget::initializeGL( );
   nlrender::Config::init( );
   _scene = new neurotessmesh::Scene( _camera );
-
 }
 
 void OpenGLWidget::paintGL( void )
@@ -420,7 +423,7 @@ void OpenGLWidget::paintGL( void )
 
 void OpenGLWidget::resizeGL( int width_ , int height_ )
 {
-  _camera->ratio((( double ) width_ ) / height_ );
+  _camera->windowSize(width_, height_);
   glViewport( 0, 0, width_, height_ );
 }
 
@@ -465,18 +468,18 @@ void OpenGLWidget::mouseMoveEvent( QMouseEvent* event_ )
 {
   if( _rotation )
   {
-      _camera->localRotation( -( _mouseX - event_->x( )) * _rotationScale,
-                              -( _mouseY - event_->y( )) * _rotationScale );
+      _camera->rotate( Eigen::Vector3f{ -( _mouseX - event_->x( )) * _rotationScale,
+                                        -( _mouseY - event_->y( )) * _rotationScale,
+                                        0.f } );
 
       _mouseX = event_->x( );
-      _mouseY = event_->y( );
-  }
+      _mouseY = event_->y( );  }
   if( _translation )
   {
       float xDis = ( event_->x() - _mouseX ) * _translationScale;
       float yDis = ( event_->y() - _mouseY ) * _translationScale;
 
-      _camera->localTranslation( Eigen::Vector3f( -xDis, yDis, 0.0f ));
+      _camera->translate( Eigen::Vector3f( -xDis, yDis, 0.0f ));
       _mouseX = event_->x( );
       _mouseY = event_->y( );
   }
@@ -508,9 +511,9 @@ void OpenGLWidget::keyPressEvent( QKeyEvent* event_ )
   switch ( event_->key( ))
   {
   case Qt::Key_C:
-    _camera->pivot( Eigen::Vector3f( 0.0f, 0.0f, 0.0f ));
+    _camera->position( Eigen::Vector3f( 0.f, 0.f, 0.f ));
     _camera->radius( 1000.0f );
-    _camera->rotation( 0.0f, 0.0f );
+    _camera->rotation( Eigen::Vector3f{0.f, 0.f,0.f} );
     update( );
     break;
   }

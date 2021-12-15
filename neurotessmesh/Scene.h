@@ -58,7 +58,7 @@ namespace neurotessmesh
      * Default constructor
      */
     NEUROTESSMESH_API
-    Scene( reto::Camera* camera_ );
+    Scene( reto::OrbitalCameraController* camera_ );
 
     /**
      * Default destructor
@@ -208,12 +208,19 @@ namespace neurotessmesh
     NEUROTESSMESH_API
     void focusOnIndices( const std::vector< unsigned int >& indices_ );
   protected:
+    /** \brief Animates the camera to the given position and radius.
+     * \param[in] position Focus position.
+     * \param[in] radius Aperture radius.
+     *
+     */
+    void animate(const Eigen::Vector3f &position, const float radius);
 
     //! Scene mode
     TSceneMode _mode;
 
     //! Scene camera
-    reto::Camera* _camera;
+    reto::OrbitalCameraController* _camera;
+    reto::CameraAnimation *_animation;
 
     //! Neurolots engine to render morphological data
     nlrender::Renderer* _renderer;

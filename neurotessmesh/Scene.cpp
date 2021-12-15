@@ -26,7 +26,7 @@
 namespace neurotessmesh
 {
 
-  Scene::Scene( reto::Camera* camera_ )
+  Scene::Scene( reto::OrbitalCameraController* camera_ )
     : _mode( VISUALIZATION )
     , _camera( camera_ )
     , _unselectedColor( 0.5f, 0.5f, 0.8f )
@@ -65,9 +65,9 @@ namespace neurotessmesh
 
   void Scene::render( void )
   {
-    Eigen::Matrix4f projection( _camera->projectionMatrix( ));
+    Eigen::Matrix4f projection( _camera->camera()->projectionMatrix( ));
     _renderer->projectionMatrix( ) = projection;
-    Eigen::Matrix4f view( _camera->viewMatrix( ));
+    Eigen::Matrix4f view( _camera->camera()->viewMatrix( ));
     _renderer->viewMatrix( ) = view;
 
     switch( _mode )
@@ -115,8 +115,12 @@ namespace neurotessmesh
     mode( Scene::VISUALIZATION );
     _editNeuron = nullptr;
     _editMesh = nullptr;
-    _camera->targetPivot( _boundingBox.center( ));
-    _camera->targetRadius( _boundingBox.radius( ) / sin( _camera->fov( )));
+
+    const float FOV = sin( _camera->camera()->fieldOfView() );
+    const auto position = _boundingBox.center();
+    const auto radius = _boundingBox.radius( ) / FOV;
+
+    animate(position, radius);
   }
 
   nlgeometry::AxisAlignedBoundingBox Scene::computeBoundingBox(
@@ -252,8 +256,8 @@ namespace neurotessmesh
     }
     generateMeshes( );
     _boundingBox = computeBoundingBox( );
-    _camera->pivot( _boundingBox.center( ));
-    _camera->radius( _boundingBox.radius( ) / sin( _camera->fov( )));
+    _camera->position( _boundingBox.center( ));
+    _camera->radius( _boundingBox.radius( ) / sin( _camera->camera()->fieldOfView()));
     conformRenderTuples( );
   }
 
@@ -298,13 +302,13 @@ namespace neurotessmesh
   void Scene::maximumDistance( float maximumDistance_ )
   {
     if(_renderer)
-      _renderer->maximumDistance( ) = maximumDistance_ * _camera->farPlane( );
+      _renderer->maximumDistance( ) = maximumDistance_ * _camera->camera()->farPlane( );
   }
 
   void Scene::subdivisionCriteria(
     nlrender::Renderer::TTessCriteria subdivisionCriteria_ )
   {
-    _renderer->tessCriteria( ) = subdivisionCriteria_;
+    _renderer->tessCriteria( subdivisionCriteria_ );
   }
 
   std::vector< unsigned int > Scene::neuronIndices( void )
@@ -333,8 +337,7 @@ namespace neurotessmesh
           mode( Scene::EDITION );
           std::vector< unsigned int >indices = { id_ };
           auto aabb = computeBoundingBox( indices );
-          _camera->targetPivot( aabb.center( ));
-          _camera->targetRadius( aabb.radius( ) / sin( _camera->fov( )));
+          animate(aabb.center(),  aabb.radius( ) / sin( _camera->camera()->fieldOfView()));
         }
         else
           _editNeuron = nullptr;
@@ -424,13 +427,39 @@ namespace neurotessmesh
     if ( indices_.size( ) > 0 )
     {
       auto aabb = computeBoundingBox( indices_ );
-      _camera->targetPivot( aabb.center( ));
-      _camera->targetRadius( aabb.radius( ) / sin( _camera->fov( )));
+      animate( aabb.center( ), aabb.radius( ) / sin( _camera->camera()->fieldOfView()));
     }
     else
     {
-      _camera->targetPivot( _boundingBox.center( ));
-      _camera->targetRadius( _boundingBox.radius( ) / sin( _camera->fov( )));
+      animate( _boundingBox.center( ),  _boundingBox.radius( ) / sin( _camera->camera()->fieldOfView()));
     }
   }
+
+  void Scene::animate(const Eigen::Vector3f &position, const float radius)
+  {
+    if(_camera->isAniming())
+    {
+      _camera->stopAnim();
+      if(_animation) delete _animation;
+    }
+
+    constexpr float CAMERA_ANIMATION_DURATION = 1.f;
+    const auto rotation = Eigen::Vector3f{0.f, 0.f, 0.f };
+
+    _animation = new reto::CameraAnimation(reto::CameraAnimation::LINEAR,
+                                           reto::CameraAnimation::NONE,
+                                           reto::CameraAnimation::LINEAR);
+
+    auto startCam = new reto::KeyCamera(0.f, _camera->position(),
+                                             _camera->rotation(),
+                                             _camera->radius());
+    _animation->addKeyCamera(startCam);
+
+    auto targetCam = new reto::KeyCamera(CAMERA_ANIMATION_DURATION,
+                                         position, rotation, radius);
+    _animation->addKeyCamera(targetCam);
+
+    _camera->startAnim(_animation);
+  }
+
 }
