@@ -17,6 +17,7 @@
 
 #include <neurotessmesh/version.h>
 #include <sstream>
+#include <locale>
 
 #define GL_MINIMUM_REQUIRED_MAJOR 4
 #define GL_MINIMUM_REQUIRED_MINOR 0
@@ -34,7 +35,9 @@ int main( int argc, char** argv )
 #ifndef _WINDOWS
   //WAR for Brion swc reader
   setenv("LANG", "C", 1);
+  setlocale(LC_NUMERIC, "C");
 #endif
+  std::locale prev_locale = std::locale::global(std::locale::classic());
 
   QApplication application(argc,argv);
 
@@ -215,8 +218,9 @@ int main( int argc, char** argv )
              mainWindow, SLOT( close( )));
   }
 
-  return application.exec();
-
+  const auto returnVal = application.exec();
+  std::locale::global(prev_locale);
+  return returnVal;
 }
 
 void usageMessage( char* progName )

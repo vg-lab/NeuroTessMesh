@@ -105,7 +105,7 @@ protected:
   virtual void mouseMoveEvent( QMouseEvent* event_ );
   virtual void keyPressEvent( QKeyEvent* event_ );
 
-  reto::Camera* _camera;
+  reto::OrbitalCameraController* _camera;
   neurotessmesh::Scene* _scene;
 
   int _mouseX, _mouseY;
