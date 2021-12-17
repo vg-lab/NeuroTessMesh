@@ -29,6 +29,7 @@ namespace neurotessmesh
   Scene::Scene( reto::OrbitalCameraController* camera_ )
     : _mode( VISUALIZATION )
     , _camera( camera_ )
+    , _animation{nullptr}
     , _unselectedColor( 0.5f, 0.5f, 0.8f )
     , _selectedColor( 0.8f, 0.5f, 0.5f )
     , _paintUnselectedSoma( true )
@@ -75,18 +76,18 @@ namespace neurotessmesh
     case VISUALIZATION:
       _renderer->render( std::get<0>( _unselectedNeurons ),
                          std::get<1>( _unselectedNeurons ),
-                         _unselectedColor , _paintUnselectedSoma,
+                         _unselectedColor , true, _paintUnselectedSoma,
                          _paintUnselectedNeurites );
       _renderer->render( std::get<0>( _selectedNeurons ),
                          std::get<1>( _selectedNeurons ),
-                         _selectedColor , _paintSelectedSoma,
+                         _selectedColor , true, _paintSelectedSoma,
                          _paintSelectedNeurites );
       break;
     case EDITION:
       if ( isEditNeuronMeshExtraction( ))
       {
         _renderer->render( _editMesh, _editNeuron->transform( ),
-                           _unselectedColor,
+                           _unselectedColor, true,
                            _paintUnselectedSoma, _paintUnselectedNeurites );
       }
       break;
@@ -443,7 +444,7 @@ namespace neurotessmesh
       if(_animation) delete _animation;
     }
 
-    constexpr float CAMERA_ANIMATION_DURATION = 1.f;
+    constexpr float CAMERA_ANIMATION_DURATION = 2.f;
     const auto rotation = Eigen::Vector3f{0.f, 0.f, 0.f };
 
     _animation = new reto::CameraAnimation(reto::CameraAnimation::LINEAR,

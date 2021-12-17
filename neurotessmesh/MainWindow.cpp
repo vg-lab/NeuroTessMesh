@@ -19,14 +19,11 @@
 #include <deflect/version.h>
 #endif
 
-
-#include <QDebug>
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QScrollArea>
 #include <QGridLayout>
-
 
 MainWindow::MainWindow( QWidget* parent_, bool updateOnIdle_ )
   : QMainWindow( parent_ )

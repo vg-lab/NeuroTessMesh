@@ -5,7 +5,7 @@
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-project(neurotessmesh VERSION 0.1.0)
+project(neurotessmesh VERSION 0.1.1)
 set(neurotessmesh_VERSION_ABI 1)
 
 # Disable in source building

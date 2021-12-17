@@ -4,7 +4,7 @@ stages:
 Ubuntu-OptionalDeps-master:
  stage: build
  script:
-  - export APPIMAGE_ICON="neurotessmesh/neurotessmesh.png"
+  - export APPIMAGE_ICON="neurotessmesh/rsc/neurotessmesh.png"
   - export APPIMAGE_REPO="gitlabci@gmrv.es:apps"
   - export DOCKER_REPO="gitlabci@gmrv.es:apps"
   - export CMAKE_EXTRA_TARGETS="install"

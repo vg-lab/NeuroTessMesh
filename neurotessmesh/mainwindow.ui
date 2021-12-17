@@ -14,7 +14,7 @@
    <string>MainWindow</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../qrc/resources.qrc">
+   <iconset resource="resources.qrc">
     <normaloff>:/icons/neurotessmesh.ico</normaloff>:/icons/neurotessmesh.ico</iconset>
   </property>
   <widget class="QWidget" name="centralwidget"/>
@@ -97,8 +97,8 @@
   </action>
   <action name="actionHome">
     <property name="icon">
-    <iconset resource="../qrc/resources.qrc">
-     <normaloff>:/icons/home.png</normaloff>:/icons/home.png</iconset>
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/rsc/home.png</normaloff>:/icons/rsc/home.png</iconset>
    </property>
    <property name="text">
     <string>Home</string>
@@ -129,8 +129,8 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qrc/resources.qrc">
-     <normaloff>:/icons/colorpicker.png</normaloff>:/icons/colorpicker.png</iconset>
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/rsc/colorpicker.png</normaloff>:/icons/rsc/colorpicker.png</iconset>
    </property>
    <property name="text">
     <string>Render options</string>
@@ -144,8 +144,8 @@
   </action>
   <action name="actionOpenBlueConfig">
    <property name="icon">
-    <iconset resource="../qrc/resources.qrc">
-     <normaloff>:/icons/open_bc.png</normaloff>:/icons/open_bc.png</iconset>
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/rsc/open_bc.png</normaloff>:/icons/rsc/open_bc.png</iconset>
    </property>
    <property name="text">
     <string>Open BlueConfig</string>
@@ -159,8 +159,8 @@
   </action>
   <action name="actionOpenXMLScene">
    <property name="icon">
-    <iconset resource="../qrc/resources.qrc">
-     <normaloff>:/icons/open_xml.png</normaloff>:/icons/open_xml.png</iconset>
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/rsc/open_xml.png</normaloff>:/icons/rsc/open_xml.png</iconset>
    </property>
    <property name="text">
     <string>Open XML Scene</string>
@@ -177,8 +177,8 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qrc/resources.qrc">
-     <normaloff>:/icons/close.png</normaloff>:/icons/close.png</iconset>
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/rsc/close.png</normaloff>:/icons/rsc/close.png</iconset>
    </property>
    <property name="text">
     <string>Close Data</string>
@@ -198,8 +198,8 @@
   </action>
   <action name="actionOpenSWCFile">
    <property name="icon">
-    <iconset resource="../qrc/resources.qrc">
-     <normaloff>:/icons/open_swc.png</normaloff>:/icons/open_swc.png</iconset>
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/rsc/open_swc.png</normaloff>:/icons/rsc/open_swc.png</iconset>
    </property>
    <property name="text">
     <string>Open SWC</string>
@@ -230,8 +230,8 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qrc/resources.qrc">
-     <normaloff>:/icons/wireframe.png</normaloff>:/icons/wireframe.png</iconset>
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/rsc/wireframe.png</normaloff>:/icons/rsc/wireframe.png</iconset>
    </property>
    <property name="text">
     <string>Show wireframe</string>
@@ -248,8 +248,8 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qrc/resources.qrc">
-     <normaloff>:/icons/reconstruction.png</normaloff>:/icons/reconstruction.png</iconset>
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/rsc/reconstruction.png</normaloff>:/icons/rsc/reconstruction.png</iconset>
    </property>
    <property name="text">
     <string>Edit And Save</string>
@@ -266,8 +266,8 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="../qrc/resources.qrc">
-     <normaloff>:/icons/settings.png</normaloff>:/icons/settings.png</iconset>
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/rsc/settings.png</normaloff>:/icons/rsc/settings.png</iconset>
    </property>
    <property name="text">
     <string>Configuration</string>
@@ -281,7 +281,7 @@
   </action>
  </widget>
  <resources>
-  <include location="../qrc/resources.qrc"/>
+  <include location="resources.qrc"/>
  </resources>
  <connections/>
 </ui>
