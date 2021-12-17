@@ -84,7 +84,7 @@ if ( APPLE )
 endif()
 
 if ( UNIX AND NOT APPLE )
-  set( NEUROTESSMESH_ICON neurotessmesh.png )
+  set( NEUROTESSMESH_ICON rsc/neurotessmesh.png )
 endif( )
 
 
