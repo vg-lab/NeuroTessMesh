@@ -47,7 +47,7 @@ int main( int argc, char** argv )
   std::string zeqUri;
   std::string target = std::string( "" );
   bool fullscreen = false, initWindowSize = false, initWindowMaximized = false;
-  int initWindowWidth, initWindowHeight;
+  int initWindowWidth = 0, initWindowHeight = 0;
 
 
   int ctxOpenGLMajor = DEFAULT_CONTEXT_OPENGL_MAJOR;
@@ -192,13 +192,13 @@ int main( int argc, char** argv )
       usageMessage( argv[0] );
     }
 
-    if ( blueConfig != "" )
+    if ( !blueConfig.empty() )
       mainWindow->openBlueConfig( blueConfig, target );
 
-    if ( swcFile != "" )
+    if ( !swcFile.empty() )
       mainWindow->openSWCFile( swcFile );
 
-    if ( sceneFile != "" )
+    if ( !sceneFile.empty() )
       mainWindow->openXMLScene( sceneFile );
   }
   else

@@ -2,6 +2,10 @@
 
 ## git master
 
+## version 0.2.0
+
+* [!15] Added a recorder option, which allows users to record the application.
+
 ## version 0.0.1
 
 * [!3] Updated Changelog and version. Release 0.0.1 preparation.

@@ -19,6 +19,8 @@
 #include <deflect/version.h>
 #endif
 
+#include <acuterecorder/acuterecorder.h>
+
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QMessageBox>
@@ -30,6 +32,7 @@ MainWindow::MainWindow( QWidget* parent_, bool updateOnIdle_ )
   , _lastOpenedFileName( "" )
   , _ui( new Ui::MainWindow )
   , _openGLWidget( nullptr )
+  , _recorder( nullptr )
 {
   _ui->setupUi( this );
 
@@ -138,11 +141,14 @@ void MainWindow::init( const std::string& zeqSession_ )
 
   connect( _neuronRender, SIGNAL( currentIndexChanged( int )),
            _openGLWidget, SLOT( changeNeuronPiece( int )));
-  _neuronRender->setCurrentIndex( 1 );
+  _neuronRender->currentIndexChanged( 1 );
 
   connect( _selectedNeuronRender, SIGNAL( currentIndexChanged( int )),
            _openGLWidget, SLOT( changeSelectedNeuronPiece( int )));
   _selectedNeuronRender->currentIndexChanged( 0 );
+
+  connect( _ui->actionRecorder , SIGNAL( triggered( void )) , this ,
+           SLOT( openRecorder( void )));
 }
 
 void MainWindow::showStatusBarMessage ( const QString& message )
@@ -157,6 +163,8 @@ void MainWindow::openBlueConfig( const std::string& fileName,
                            neurotessmesh::Scene::TDataFileType::BlueConfig,
                            targetLabel );
   updateNeuronList( );
+  _openGLWidget->changeNeuronPiece(_neuronRender->currentIndex());
+  _openGLWidget->changeSelectedNeuronPiece(_selectedNeuronRender->currentIndex());
 }
 
 void MainWindow::openXMLScene( const std::string& fileName )
@@ -164,6 +172,8 @@ void MainWindow::openXMLScene( const std::string& fileName )
   _openGLWidget->loadData( fileName,
                            neurotessmesh::Scene::TDataFileType::NsolScene );
   updateNeuronList( );
+  _openGLWidget->changeNeuronPiece(_neuronRender->currentIndex());
+  _openGLWidget->changeSelectedNeuronPiece(_selectedNeuronRender->currentIndex());
 }
 
 void MainWindow::openSWCFile( const std::string& fileName )
@@ -171,6 +181,8 @@ void MainWindow::openSWCFile( const std::string& fileName )
   _openGLWidget->loadData( fileName,
                            neurotessmesh::Scene::TDataFileType::SWC );
   updateNeuronList( );
+  _openGLWidget->changeNeuronPiece(_neuronRender->currentIndex());
+  _openGLWidget->changeSelectedNeuronPiece(_selectedNeuronRender->currentIndex());
 }
 
 void MainWindow::updateNeuronList( void )
@@ -308,11 +320,56 @@ void MainWindow::showAbout( void )
        "<a href=www.gmrv.es>www.gmrv.es</a><br>"
        "<a href='mailto:gmrv@gmrv.es'>gmrv@gmrv.es</a><br><br>"
        "<br>(C) 2015. Universidad Rey Juan Carlos<br><br>"
-       "<img src=':/icons/gmrv_grande.png' >&nbsp;&nbsp;&nbsp;&nbsp;"
-       "<img src=':/icons/logoURJC.png' ><br><br> "
+       "<img src=':/icons/rsc/gmrv_grande.png' >&nbsp;&nbsp;&nbsp;&nbsp;"
+       "<img src=':/icons/rsc/logoURJC.png' ><br><br> "
        "</p>"
        "")
     );
+}
+
+void MainWindow::openRecorder( void )
+{
+
+  // The button stops the recorder if found.
+  if( _recorder != nullptr )
+  {
+    _ui->actionRecorder->setDisabled( true );
+    _recorder->stop();
+
+    // Recorder will be deleted after finishing.
+    _recorder = nullptr;
+    _ui->actionRecorder->setChecked( false );
+    return;
+  }
+
+  RSWParameters params;
+  params.widgetsToRecord.emplace_back( "Viewport" , _openGLWidget );
+  params.widgetsToRecord.emplace_back( "Main Widget" , this );
+  params.includeScreens = false;
+
+  if(!_ui->actionAdvancedRecorderOptions->isChecked())
+  {
+    params.showWorker = false;
+    params.showWidgetSourceMode = false;
+    params.showSourceParameters = false;
+  }
+
+  auto dialog = new RecorderDialog( nullptr , params , true );
+  dialog->setWindowIcon( QIcon( ":/icons/rsc/neurotessmesh.png" ));
+  dialog->setFixedSize( 800 , 600 );
+  if ( dialog->exec( ) == QDialog::Accepted)
+  {
+    _recorder = dialog->getRecorder( );
+    connect( _recorder , SIGNAL( finished( )) ,
+             _recorder , SLOT( deleteLater( )));
+    connect( _recorder , SIGNAL( finished( )) ,
+             this , SLOT( finishRecording( )));
+    _ui->actionRecorder->setChecked( true );
+  } else
+  {
+    _ui->actionRecorder->setChecked( false );
+  }
+  dialog->deleteLater( );
 }
 
 void MainWindow::updateExtractMeshDock( void )
@@ -362,6 +419,11 @@ void MainWindow::onActionGenerate( int /*value_*/ )
   }
 
   _openGLWidget->regenerateNeuronToEdit( alphaRadius, alphaNeurites );
+}
+
+void MainWindow::finishRecording( )
+{
+  _ui->actionRecorder->setEnabled( true );
 }
 
 void MainWindow::_generateNeuritesLayout( void )

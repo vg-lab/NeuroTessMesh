@@ -27,6 +27,8 @@ namespace Ui
 class MainWindow;
 }
 
+class Recorder;
+
 class MainWindow
   : public QMainWindow
 {
@@ -56,12 +58,17 @@ public slots:
   void openXMLSceneThroughDialog( void );
   void openSWCFileThroughDialog( void );
   void showAbout( void );
+  void openRecorder( void );
 
   void updateExtractMeshDock( void );
   void updateConfigurationDock( void );
   void updateRenderOptionsDock( void );
   void onListClicked( QListWidgetItem *item );
   void onActionGenerate( int value_ );
+
+protected slots:
+
+  void finishRecording( );
 
 protected:
 
@@ -100,4 +107,7 @@ private:
 
   QComboBox* _neuronRender;
   QComboBox* _selectedNeuronRender;
+
+  // Recorder
+  Recorder* _recorder;
 };

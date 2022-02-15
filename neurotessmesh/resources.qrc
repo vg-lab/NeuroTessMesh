@@ -12,5 +12,7 @@
     <file>rsc/reconstruction.png</file>
     <file>rsc/home.png</file>
     <file>rsc/settings.png</file>
+    <file>rsc/recorder.svg</file>
+    <file>rsc/neurotessmesh.png</file>
   </qresource>
 </RCC>

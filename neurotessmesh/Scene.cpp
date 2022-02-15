@@ -186,7 +186,7 @@ namespace neurotessmesh
     }
   }
 
-  void Scene::loadData( const std::string& fileName_,
+  std::string Scene::loadData( const std::string& fileName_,
                         const TDataFileType fileType_,
 #ifdef NSOL_USE_BRION
                         const std::string& target_
@@ -196,6 +196,7 @@ namespace neurotessmesh
     )
   {
     close( );
+    std::string errorString;
     try{
       switch( fileType_ )
       {
@@ -254,12 +255,16 @@ namespace neurotessmesh
     {
       std::cerr << "Error: can't load file: " << fileName_ << std::endl;
       std::cerr << excep.what( ) << std::endl;
+      errorString = std::string(excep.what());
     }
+
     generateMeshes( );
     _boundingBox = computeBoundingBox( );
     _camera->position( _boundingBox.center( ));
     _camera->radius( _boundingBox.radius( ) / sin( _camera->camera()->fieldOfView()));
     conformRenderTuples( );
+
+    return errorString;
   }
 
   void Scene::paintUnselectedSoma( bool paint_ )

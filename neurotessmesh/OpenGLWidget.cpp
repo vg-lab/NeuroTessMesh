@@ -13,6 +13,7 @@
 #include <QMouseEvent>
 #include <QColorDialog>
 #include <QFileDialog>
+#include <QMessageBox>
 #include <sstream>
 #include <string>
 #include <iostream>
@@ -67,13 +68,29 @@ OpenGLWidget::~OpenGLWidget( void )
   delete _scene;
 }
 
-void OpenGLWidget::loadData(
+bool OpenGLWidget::loadData(
   const std::string& fileName_,
   const neurotessmesh::Scene::TDataFileType fileType_,
   const std::string& target_ )
 {
   makeCurrent( );
-  _scene->loadData( fileName_, fileType_, target_ );
+  const auto errorString = _scene->loadData( fileName_, fileType_, target_ );
+
+  if(!errorString.empty())
+  {
+    const QString message = QString("Error loading file '%1'.\n%2")
+                             .arg(QString::fromStdString(fileName_))
+                             .arg(QString::fromStdString(errorString));
+
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle(tr("Error Loading Data"));
+    msgBox.setWindowIcon(QIcon(":/icons/rsc/neurotessmesh.png"));
+    msgBox.setText(message);
+    msgBox.setIcon(QMessageBox::Icon::Critical);
+    msgBox.exec();
+  }
+
+  return errorString.empty();
 }
 
 void OpenGLWidget::idleUpdate( bool idleUpdate_ )
@@ -91,7 +108,6 @@ void OpenGLWidget::neuronToEdit( const unsigned int id_ )
   _scene->setNeuronToEdit( id_ );
   update( );
 }
-
 
 unsigned int OpenGLWidget::numNeuritesToEdit( void ) const
 {
@@ -366,7 +382,6 @@ void OpenGLWidget::initializeGL( void )
 
 void OpenGLWidget::paintGL( void )
 {
-
   makeCurrent( );
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
