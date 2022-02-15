@@ -55,6 +55,9 @@
     <addaction name="actionRenderOptions"/>
     <addaction name="actionEditSave"/>
     <addaction name="actionConfiguration"/>
+    <addaction name="separator"/>
+    <addaction name="actionRecorder"/>
+    <addaction name="actionAdvancedRecorderOptions"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuOptions"/>
@@ -81,6 +84,7 @@
    <addaction name="actionWireframe"/>
    <addaction name="actionCloseData"/>
    <addaction name="actionRenderOptions"/>
+   <addaction name="actionRecorder"/>
   </widget>
   <action name="actionQuit">
    <property name="text">
@@ -277,6 +281,32 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+C</string>
+   </property>
+  </action>
+  <action name="actionRecorder">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/rsc/recorder.svg</normaloff>:/icons/rsc/recorder.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Recorder</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
+   </property>
+  </action>
+  <action name="actionAdvancedRecorderOptions">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Advanced recorder options</string>
+   </property>
+   <property name="toolTip">
+    <string>Enable advanced recorder options</string>
    </property>
   </action>
  </widget>

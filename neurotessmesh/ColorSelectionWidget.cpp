@@ -43,6 +43,7 @@ void ColorSelectionWidget::mousePressEvent( QMouseEvent* /*event*/ )
   {
     _color = newColor;
     emit this->colorChanged( _color );
+    repaint();
   }
 }
 
@@ -50,4 +51,5 @@ void ColorSelectionWidget::color( const QColor& color_ )
 {
   _color = color_;
   emit this->colorChanged( _color );
+  repaint();
 }

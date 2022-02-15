@@ -121,13 +121,14 @@ namespace neurotessmesh
     void generateMeshes( void );
 
     /**
-     * Method to load neurons data
+     * Method to load neurons data returns an empty string on success
+     * or an error string otherwise.
      * @param fileName path to the file
      * @param fileType type of file
      * @param target to load, specific param to BlueConfig data
      */
     NEUROTESSMESH_API
-    void loadData( const std::string& fileName_,
+    std::string loadData( const std::string& fileName_,
                    const TDataFileType fileType_,
                    const std::string& target_ = std::string( "" ));
 

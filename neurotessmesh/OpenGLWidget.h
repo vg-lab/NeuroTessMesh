@@ -44,7 +44,13 @@ public:
 
   ~OpenGLWidget( void );
 
-  void loadData( const std::string& fileName_,
+  /** \brief Loads a dataset with the given parameters.
+   * \param[in] fileName_ Dataset filename.
+   * \param[in] fileType_ Dataset type.
+   * \param[in] target_ BlueConfig target if Blueconfig or empty otherwise.
+   *
+   */
+  bool loadData( const std::string& fileName_,
                  const neurotessmesh::Scene::TDataFileType fileType_ =
                  neurotessmesh::Scene::TDataFileType::BlueConfig,
                  const std::string& target_ = std::string( "" ));
