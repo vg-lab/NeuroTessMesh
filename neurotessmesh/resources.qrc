@@ -1,7 +1,7 @@
 <RCC>
   <qresource prefix="icons">
-    <file>rsc/gmrv_grande.png</file>
     <file>rsc/logoURJC.png</file>
+    <file>rsc/logoVGLab.png</file>
     <file>neurotessmesh.ico</file>
     <file>rsc/wireframe.png</file>
     <file>rsc/open_swc.png</file>

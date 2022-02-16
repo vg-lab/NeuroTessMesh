@@ -227,8 +227,6 @@ void MainWindow::openBlueConfigThroughDialog( void )
       std::string fileName = path.toStdString( );
       openBlueConfig( fileName, targetLabel );
     }
-
-
   }
 #endif
 }
@@ -262,7 +260,6 @@ void MainWindow::openSWCFileThroughDialog( void )
     std::string fileName = path.toStdString( );
     openSWCFile( fileName );
   }
-
 }
 
 void MainWindow::showAbout( void )
@@ -317,21 +314,20 @@ void MainWindow::showAbout( void )
 #endif
     tr ( "</ul>" ) +
     tr( "<br>GMRV - Universidad Rey Juan Carlos<br>"
-       "<a href=www.gmrv.es>www.gmrv.es</a><br>"
-       "<a href='mailto:gmrv@gmrv.es'>gmrv@gmrv.es</a><br><br>"
-       "<br>(C) 2015. Universidad Rey Juan Carlos<br><br>"
-       "<img src=':/icons/rsc/gmrv_grande.png' >&nbsp;&nbsp;&nbsp;&nbsp;"
+       "<a href=www.vg-lab.es>www.vg-lab.es</a><br>"
+       "<a href='mailto:dev@vg-lab.es'>dev@vg-lab.es</a><br><br>"
+       "<br>(C) 2015-2022. Universidad Rey Juan Carlos<br><br>"
+       "<img src=':/icons/rsc/logoVGLab.png' >&nbsp;&nbsp;&nbsp;&nbsp;"
        "<img src=':/icons/rsc/logoURJC.png' ><br><br> "
        "</p>"
        "")
     );
 }
 
-void MainWindow::openRecorder( void )
+void MainWindow::openRecorder()
 {
-
   // The button stops the recorder if found.
-  if( _recorder != nullptr )
+  if( _recorder )
   {
     _ui->actionRecorder->setDisabled( true );
     _recorder->stop();
@@ -354,12 +350,12 @@ void MainWindow::openRecorder( void )
     params.showSourceParameters = false;
   }
 
-  auto dialog = new RecorderDialog( nullptr , params , true );
-  dialog->setWindowIcon( QIcon( ":/icons/rsc/neurotessmesh.png" ));
-  dialog->setFixedSize( 800 , 600 );
-  if ( dialog->exec( ) == QDialog::Accepted)
+  RecorderDialog dialog( nullptr , params , true );
+  dialog.setWindowIcon( QIcon( ":/icons/rsc/neurotessmesh.png" ));
+  dialog.setFixedSize( 800 , 600 );
+  if ( dialog.exec( ) == QDialog::Accepted)
   {
-    _recorder = dialog->getRecorder( );
+    _recorder = dialog.getRecorder( );
     connect( _recorder , SIGNAL( finished( )) ,
              _recorder , SLOT( deleteLater( )));
     connect( _recorder , SIGNAL( finished( )) ,
@@ -369,7 +365,6 @@ void MainWindow::openRecorder( void )
   {
     _ui->actionRecorder->setChecked( false );
   }
-  dialog->deleteLater( );
 }
 
 void MainWindow::updateExtractMeshDock( void )
@@ -409,7 +404,6 @@ void MainWindow::onListClicked( QListWidgetItem* item )
 
 void MainWindow::onActionGenerate( int /*value_*/ )
 {
-
   float alphaRadius = ( float )_radiusSlider->value( ) / 100.0f;
   std::vector< float > alphaNeurites;
 
@@ -428,7 +422,7 @@ void MainWindow::finishRecording( )
 
 void MainWindow::_generateNeuritesLayout( void )
 {
-  unsigned int numDendrites = _openGLWidget->numNeuritesToEdit( );
+  const unsigned int numDendrites = _openGLWidget->numNeuritesToEdit( );
 
   _neuriteSliders.clear( );
 
@@ -598,11 +592,8 @@ void MainWindow::_initConfigurationDock( void )
     new QLabel( QString( "Distance threshold" )));
   vbox->addWidget( _distanceSlider );
 
-
   // Radio Buttons Group
-
-  QGroupBox* tessMethodGroup =
-    new QGroupBox( QString( "Tessellation criteria" ));
+  auto tessMethodGroup = new QGroupBox( QString( "Tessellation criteria" ));
   _configDockLayout->addWidget( tessMethodGroup );
   vbox = new QVBoxLayout;
   tessMethodGroup->setLayout( vbox );
@@ -622,7 +613,6 @@ void MainWindow::_initConfigurationDock( void )
            _ui->actionConfiguration, SLOT( setChecked( bool )));
   connect( _ui->actionConfiguration, SIGNAL( triggered( )),
            this, SLOT( updateConfigurationDock( )));
-
 }
 
 void MainWindow::_initRenderOptionsDock( void )

@@ -23,7 +23,6 @@
 
 const float OpenGLWidget::_colorFactor = 1 / 255.0f;
 
-
 OpenGLWidget::OpenGLWidget( QWidget* parent_,
                             Qt::WindowFlags windowsFlags_ )
   : QOpenGLWidget( parent_, windowsFlags_ )
@@ -61,11 +60,11 @@ OpenGLWidget::OpenGLWidget( QWidget* parent_,
   _lastSavedFileName = QDir::currentPath( );
 }
 
-
 OpenGLWidget::~OpenGLWidget( void )
 {
   delete _camera;
   delete _scene;
+  delete _cameraTimer;
 }
 
 bool OpenGLWidget::loadData(
@@ -138,11 +137,15 @@ void OpenGLWidget::setZeqSession( const std::string&
   if ( !session_.empty( ))
   {
     if ( _camera )
+    {
       delete _camera;
+    }
+
     _camera = new reto::OrbitalCameraController( nullptr, session_ );
 
     if ( _subscriberThread )
     {
+      _subscriberThread->~thread();
       delete _subscriberThread;
       delete _subscriber;
     }
@@ -273,30 +276,24 @@ void OpenGLWidget::extractEditNeuronMesh( void )
 {
   if( _scene->isEditNeuronMeshExtraction( ))
   {
-
     QString path;
-    QString filter( tr( "OBJ (*.obj);; All files (*)" ));
-    QFileDialog* fd = new QFileDialog( this,
-                                       QString( "Save mesh to OBJ file" ),
-                                       _lastSavedFileName,
-                                       filter );
+    const QString filter( tr( "OBJ (*.obj);; All files (*)" ));
+    QFileDialog fd(this, QString( "Save mesh to OBJ file" ),
+                   _lastSavedFileName, filter );
 
-    fd->setOption( QFileDialog::DontUseNativeDialog, true );
-    fd->setDefaultSuffix( "obj") ;
-    fd->setFileMode( QFileDialog/*::FileMode*/::AnyFile );
-    fd->setAcceptMode( QFileDialog/*::AcceptMode*/::AcceptSave );
-    if ( fd->exec( ))
-      path = fd->selectedFiles( )[0];
+    fd.setOption( QFileDialog::DontUseNativeDialog, true );
+    fd.setDefaultSuffix( "obj") ;
+    fd.setFileMode( QFileDialog/*::FileMode*/::AnyFile );
+    fd.setAcceptMode( QFileDialog/*::AcceptMode*/::AcceptSave );
+    if ( fd.exec( ))
+      path = fd.selectedFiles( )[0];
 
-    if ( path != QString( "" ))
+    if ( !path.isEmpty() )
     {
-      std::cout << "file " << path.toStdString( ) << std::endl;
-
       _lastSavedFileName = QFileInfo( path ).path( );
       this->makeCurrent( );
       _scene->extractEditNeuronMesh( path.toStdString( ));
       glUseProgram( 0 );
-
     }
   }
 }
@@ -393,21 +390,19 @@ void OpenGLWidget::paintGL( void )
 #define FRAMES_PAINTED_TO_MEASURE_FPS 10
   if ( _frameCount % FRAMES_PAINTED_TO_MEASURE_FPS  == 0 )
   {
-
     std::chrono::time_point< std::chrono::system_clock > now =
       std::chrono::system_clock::now( );
 
-    auto duration =
+    const auto duration =
       std::chrono::duration_cast<std::chrono::milliseconds>( now - _then );
     _then = now;
 
     MainWindow* mainWindow = dynamic_cast< MainWindow* >( parent( ));
     if ( mainWindow )
     {
+      const unsigned int ellapsedMiliseconds = duration.count( );
 
-      unsigned int ellapsedMiliseconds = duration.count( );
-
-      unsigned int fps = roundf( 1000.0f *
+      const unsigned int fps = roundf( 1000.0f *
                                  float( FRAMES_PAINTED_TO_MEASURE_FPS ) /
                                  float( ellapsedMiliseconds ));
 
@@ -422,12 +417,10 @@ void OpenGLWidget::paintGL( void )
       else
         _fpsLabel.setVisible( false );
     }
-
   }
 
   if ( _idleUpdate )
   {
-    // std::cout << _frameCount << std::endl;
     update( );
   }
   else
@@ -502,7 +495,6 @@ void OpenGLWidget::mouseMoveEvent( QMouseEvent* event_ )
   this->update( );
 }
 
-
 void OpenGLWidget::wheelEvent( QWheelEvent* event_ )
 {
 
@@ -516,8 +508,6 @@ void OpenGLWidget::wheelEvent( QWheelEvent* event_ )
   update( );
 
 }
-
-
 
 void OpenGLWidget::keyPressEvent( QKeyEvent* event_ )
 {
