@@ -312,8 +312,15 @@ void MainWindow::showAbout( void )
     tr( ")" ) +
     tr ( "</li> " ) +
 #endif
+    tr( "<li>AcuteRecorder " ) +
+    tr( acuterecorder::Version::getString().c_str( )) +
+    tr( " (" ) +
+    tr( std::to_string( acuterecorder::Version::getRevision( )).c_str( )) +
+    tr( ")" ) +
+    tr ( "</li> " ) +
+
     tr ( "</ul>" ) +
-    tr( "<br>GMRV - Universidad Rey Juan Carlos<br>"
+    tr( "<br>VG-Lab - Universidad Rey Juan Carlos<br>"
        "<a href=www.vg-lab.es>www.vg-lab.es</a><br>"
        "<a href='mailto:dev@vg-lab.es'>dev@vg-lab.es</a><br><br>"
        "<br>(C) 2015-2022. Universidad Rey Juan Carlos<br><br>"

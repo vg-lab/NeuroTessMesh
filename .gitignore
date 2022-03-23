@@ -7,5 +7,22 @@ doc/latex
 .ciscript
 ci.*
 jambs*
+acuterecorder*
+Brion*
+FiReS*
+HighFive*
+Keyv*
+Lexis*
+Lunchbox*
+MVDTool*
+ReTo*
+Servus*
+ZeroBuf*
+ZeroEQ*
+gmrvlex*
+httpxx*
+neurolots*
+nsol*
+vmmlib*
 
 nlrender/Shaders.h
