@@ -63,7 +63,7 @@ MainWindow::MainWindow( QWidget* parent_, bool updateOnIdle_ )
   _initConfigurationDock( );
   _initRenderOptionsDock( );
 
-  _openGLWidget = new OpenGLWidget( 0, 0 );
+  _openGLWidget = new OpenGLWidget();
   this->setCentralWidget( _openGLWidget );
   _openGLWidget->setMinimumSize( QSize( 100, 100 ));
 
