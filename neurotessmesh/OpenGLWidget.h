@@ -39,8 +39,8 @@ class OpenGLWidget
 
 public:
 
-  OpenGLWidget( QWidget* parent_ = 0,
-                Qt::WindowFlags windowFlags_ = 0 );
+  OpenGLWidget( QWidget* parent_ = nullptr,
+                Qt::WindowFlags windowFlags_ = Qt::WindowFlags() );
 
   ~OpenGLWidget( void );
 

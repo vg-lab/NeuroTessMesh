@@ -36,7 +36,7 @@ class MainWindow
 
 public:
 
-  explicit MainWindow( QWidget* parent_ = 0,
+  explicit MainWindow( QWidget* parent_ = nullptr,
                        bool updateOnIdle_ = false );
   ~MainWindow( void );
 

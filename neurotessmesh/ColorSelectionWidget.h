@@ -20,7 +20,7 @@ class ColorSelectionWidget: public QWidget
 
 public:
 
-  ColorSelectionWidget( QWidget* parent = 0 );
+  ColorSelectionWidget( QWidget* parent = nullptr );
 
   void paintEvent( QPaintEvent* e );
 
