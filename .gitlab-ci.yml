@@ -4,6 +4,7 @@ stages:
 Ubuntu-OptionalDeps-master:
  stage: build
  script:
+  - module load Qt-5.15.2
   - export APPIMAGE_ICON="neurotessmesh/rsc/neurotessmesh.png"
   - export APPIMAGE_REPO="gitlabci@gmrv.es:apps"
   - export DOCKER_REPO="gitlabci@gmrv.es:apps"
@@ -20,6 +21,7 @@ Ubuntu-OptionalDeps-master:
 Ubuntu-OptionalDeps:
  stage: build
  script:
+  - module load Qt-5.15.2
   - export CMAKE_EXTRA_TARGETS="install"
   - export BUILD_OPTIONALS_SUBPROJECTS=1
   - export CMAKE_EXTRA_ARGS="-DCLONE_SUBPROJECTS=ON -DNEUROTESSMESH_OPTIONALS_AS_REQUIRED=ON"
@@ -33,6 +35,7 @@ Ubuntu-OptionalDeps:
 Ubuntu-Subproject-master:
  stage: build
  script:
+  - module load Qt-5.15.2
   - export CMAKE_EXTRA_ARGS="-DCLONE_SUBPROJECTS=ON"
   - export BUILD_GENERATOR="Ninja"
   - export GITHUB_MIRROR_URL="git@github.com:gmrvvis/NeuroTessMesh"
@@ -45,6 +48,7 @@ Ubuntu-Subproject-master:
 Ubuntu-Subproject:
  stage: build
  script:
+  - module load Qt-5.15.2
   - export CMAKE_EXTRA_ARGS="-DCLONE_SUBPROJECTS=ON"
   - export BUILD_GENERATOR="Ninja"
   - bash .gitlab-ci.sh
@@ -53,29 +57,29 @@ Ubuntu-Subproject:
  tags:
   - ubuntu
 
-OSX-OptionalDeps:
- stage: build
- script:
-  - module load Qt-5.9.1
-  - export DMGAPP_REPO="gitlabci@gmrv.es:apps"
-  - export BUILD_OPTIONALS_SUBPROJECTS=1
-  - export CMAKE_EXTRA_ARGS="-DCLONE_SUBPROJECTS=ON -DNEUROLOTS_OPTIONALS_AS_REQUIRED=ON -DLibJpegTurbo_INCLUDE_DIR=/usr/local/opt/jpeg-turbo/include -DLibJpegTurbo_LIBRARY=/usr/local/opt/jpeg-turbo/lib/libturbojpeg.dylib -DGLUT_glut_LIBRARY=/usr/local/Cellar/freeglut/3.0.0/lib/libglut.dylib"
-  - export BUILD_GENERATOR="Ninja"
-  - export CMAKE_OSX_ARCHITECTURES=x86_64
-  - bash .gitlab-ci.sh
- tags:
-  - osx-sierra
+    #OSX-OptionalDeps:
+    # stage: build
+    # script:
+    #  - module load Qt-5.9.1
+    #  - export DMGAPP_REPO="gitlabci@gmrv.es:apps"
+    #  - export BUILD_OPTIONALS_SUBPROJECTS=1
+    #  - export CMAKE_EXTRA_ARGS="-DCLONE_SUBPROJECTS=ON -DNEUROLOTS_OPTIONALS_AS_REQUIRED=ON -DLibJpegTurbo_INCLUDE_DIR=/usr/local/opt/jpeg-turbo/include -DLibJpegTurbo_LIBRARY=/usr/local/opt/jpeg-turbo/lib/libturbojpeg.dylib -DGLUT_glut_LIBRARY=/usr/local/Cellar/freeglut/3.0.0/lib/libglut.dylib"
+    #  - export BUILD_GENERATOR="Ninja"
+    #  - export CMAKE_OSX_ARCHITECTURES=x86_64
+    #  - bash .gitlab-ci.sh
+    # tags:
+    #  - osx-sierra
 
-OSX-Subproject:
- stage: build
- script:
-  - module load Qt-5.9.1
-  - export BUILD_GENERATOR="Ninja"
-  - export CMAKE_OSX_ARCHITECTURES=x86_64
-  - export CMAKE_EXTRA_ARGS="-DCLONE_SUBPROJECTS=ON -DGLUT_glut_LIBRARY=/usr/local/Cellar/freeglut/3.0.0/lib/libglut.dylib"
-  - bash .gitlab-ci.sh
- tags:
-  - osx-sierra
+    #OSX-Subproject:
+    # stage: build
+    # script:
+    #  - module load Qt-5.9.1
+    #  - export BUILD_GENERATOR="Ninja"
+    #  - export CMAKE_OSX_ARCHITECTURES=x86_64
+    #  - export CMAKE_EXTRA_ARGS="-DCLONE_SUBPROJECTS=ON -DGLUT_glut_LIBRARY=/usr/local/Cellar/freeglut/3.0.0/lib/libglut.dylib"
+    #  - bash .gitlab-ci.sh
+    # tags:
+    #  - osx-sierra
 
 Win7:
  stage: build
