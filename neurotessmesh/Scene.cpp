@@ -172,16 +172,23 @@ namespace neurotessmesh
     for ( auto neuronIt: _dataSet->neurons( ))
     {
       auto morphology = neuronIt.second->morphology( );
-      if ( _neuronMeshes.find( morphology ) == _neuronMeshes.end( ))
+      if(morphology)
       {
-        auto simplifier = nsol::Simplifier::Instance( );
-        simplifier->adaptSoma( morphology );
-        simplifier->simplify( morphology, nsol::Simplifier::DIST_NODES_RADIUS );
+        if ( _neuronMeshes.find( morphology ) == _neuronMeshes.end( ))
+        {
+          auto simplifier = nsol::Simplifier::Instance( );
+          simplifier->adaptSoma( morphology );
+          simplifier->simplify( morphology, nsol::Simplifier::DIST_NODES_RADIUS );
 
-        auto mesh = nlgenerator::MeshGenerator::generateMesh( morphology );
-        mesh->uploadGPU( _attribsFormat, nlgeometry::Facet::PATCHES );
-        mesh->clearCPUData( );
-        _neuronMeshes[ morphology ] = mesh;
+          auto mesh = nlgenerator::MeshGenerator::generateMesh( morphology );
+          mesh->uploadGPU( _attribsFormat, nlgeometry::Facet::PATCHES );
+          mesh->clearCPUData( );
+          _neuronMeshes[ morphology ] = mesh;
+        }
+      }
+      else
+      {
+        throw std::runtime_error("Unable to load neuron morphology");
       }
     }
   }
@@ -250,6 +257,12 @@ namespace neurotessmesh
       default:
         throw std::runtime_error( "Data file type not supported" );
       }
+
+      generateMeshes( );
+      _boundingBox = computeBoundingBox( );
+      _camera->position( _boundingBox.center( ));
+      _camera->radius( _boundingBox.radius( ) / sin( _camera->camera()->fieldOfView()));
+      conformRenderTuples( );
     }
     catch( const std::exception &excep )
     {
@@ -257,12 +270,6 @@ namespace neurotessmesh
       std::cerr << excep.what( ) << std::endl;
       errorString = std::string(excep.what());
     }
-
-    generateMeshes( );
-    _boundingBox = computeBoundingBox( );
-    _camera->position( _boundingBox.center( ));
-    _camera->radius( _boundingBox.radius( ) / sin( _camera->camera()->fieldOfView()));
-    conformRenderTuples( );
 
     return errorString;
   }

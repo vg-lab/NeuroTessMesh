@@ -89,4 +89,4 @@ if ( UNIX AND NOT APPLE )
 endif( )
 
 
-common_application( NeuroTessMesh GUI ${COMMON_APP_ARGS} )
+common_application( neurotessmesh GUI ${COMMON_APP_ARGS} )
