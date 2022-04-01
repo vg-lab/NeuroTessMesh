@@ -24,7 +24,7 @@
      <x>0</x>
      <y>0</y>
      <width>1000</width>
-     <height>23</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -55,12 +55,16 @@
     <addaction name="actionRenderOptions"/>
     <addaction name="actionEditSave"/>
     <addaction name="actionConfiguration"/>
-    <addaction name="separator"/>
-    <addaction name="actionRecorder"/>
+   </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>Tools</string>
+    </property>
     <addaction name="actionAdvancedRecorderOptions"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuOptions"/>
+   <addaction name="menuTools"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -84,7 +88,7 @@
    <addaction name="actionWireframe"/>
    <addaction name="actionCloseData"/>
    <addaction name="actionRenderOptions"/>
-   <addaction name="actionRecorder"/>
+   <addaction name="separator"/>
   </widget>
   <action name="actionQuit">
    <property name="text">
@@ -100,7 +104,7 @@
    </property>
   </action>
   <action name="actionHome">
-    <property name="icon">
+   <property name="icon">
     <iconset resource="resources.qrc">
      <normaloff>:/icons/rsc/home.png</normaloff>:/icons/rsc/home.png</iconset>
    </property>
@@ -281,21 +285,6 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+C</string>
-   </property>
-  </action>
-  <action name="actionRecorder">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="resources.qrc">
-     <normaloff>:/icons/rsc/recorder.svg</normaloff>:/icons/rsc/recorder.svg</iconset>
-   </property>
-   <property name="text">
-    <string>Recorder</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+R</string>
    </property>
   </action>
   <action name="actionAdvancedRecorderOptions">

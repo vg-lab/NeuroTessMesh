@@ -28,6 +28,7 @@ class MainWindow;
 }
 
 class Recorder;
+class QCloseEvent;
 
 class MainWindow
   : public QMainWindow
@@ -71,6 +72,7 @@ protected slots:
   void finishRecording( );
 
 protected:
+  virtual void closeEvent(QCloseEvent *e) override;
 
   QString _lastOpenedFileName;
 
