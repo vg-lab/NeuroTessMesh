@@ -26,6 +26,7 @@
 #include <QMessageBox>
 #include <QScrollArea>
 #include <QGridLayout>
+#include <QCloseEvent>
 
 MainWindow::MainWindow( QWidget* parent_, bool updateOnIdle_ )
   : QMainWindow( parent_ )
@@ -35,6 +36,13 @@ MainWindow::MainWindow( QWidget* parent_, bool updateOnIdle_ )
   , _recorder( nullptr )
 {
   _ui->setupUi( this );
+
+  auto recorderAction = RecorderUtils::recorderAction();
+  _ui->menuTools->insertAction(_ui->menuTools->actions().first(), recorderAction);
+  _ui->toolBar->addAction(recorderAction);
+
+  connect(recorderAction, SIGNAL(triggered(bool)),
+          this,           SLOT(openRecorder()));
 
   _ui->actionUpdateOnIdle->setChecked( updateOnIdle_ );
   _ui->actionShowFPSOnIdleUpdate->setChecked( false );
@@ -51,7 +59,6 @@ MainWindow::MainWindow( QWidget* parent_, bool updateOnIdle_ )
 #else
   _ui->actionOpenXMLScene->setEnabled( false );
 #endif
-
 
   connect( _ui->actionQuit, SIGNAL( triggered( )),
            QApplication::instance(), SLOT( quit( )));
@@ -146,9 +153,6 @@ void MainWindow::init( const std::string& zeqSession_ )
   connect( _selectedNeuronRender, SIGNAL( currentIndexChanged( int )),
            _openGLWidget, SLOT( changeSelectedNeuronPiece( int )));
   _selectedNeuronRender->currentIndexChanged( 0 );
-
-  connect( _ui->actionRecorder , SIGNAL( triggered( void )) , this ,
-           SLOT( openRecorder( void )));
 }
 
 void MainWindow::showStatusBarMessage ( const QString& message )
@@ -333,15 +337,17 @@ void MainWindow::showAbout( void )
 
 void MainWindow::openRecorder()
 {
+  auto action = qobject_cast<QAction *>(sender());
+
   // The button stops the recorder if found.
   if( _recorder )
   {
-    _ui->actionRecorder->setDisabled( true );
-    _recorder->stop();
+    if(action) action->setDisabled( true );
+
+    RecorderUtils::stopAndWait(_recorder, this);
 
     // Recorder will be deleted after finishing.
     _recorder = nullptr;
-    _ui->actionRecorder->setChecked( false );
     return;
   }
 
@@ -367,10 +373,10 @@ void MainWindow::openRecorder()
              _recorder , SLOT( deleteLater( )));
     connect( _recorder , SIGNAL( finished( )) ,
              this , SLOT( finishRecording( )));
-    _ui->actionRecorder->setChecked( true );
+    if(action) action->setChecked( true );
   } else
   {
-    _ui->actionRecorder->setChecked( false );
+    if(action) action->setChecked( false );
   }
 }
 
@@ -424,7 +430,12 @@ void MainWindow::onActionGenerate( int /*value_*/ )
 
 void MainWindow::finishRecording( )
 {
-  _ui->actionRecorder->setEnabled( true );
+  auto actionRecorder = _ui->menuTools->actions().first();
+  if(actionRecorder)
+  {
+    actionRecorder->setEnabled( true );
+    actionRecorder->setChecked( false );
+  }
 }
 
 void MainWindow::_generateNeuritesLayout( void )
@@ -692,4 +703,27 @@ void MainWindow::_initRenderOptionsDock( void )
            _ui->actionRenderOptions, SLOT( setChecked( bool )));
   connect( _ui->actionRenderOptions, SIGNAL( triggered( )),
            this, SLOT( updateRenderOptionsDock( )));
+}
+
+void MainWindow::closeEvent(QCloseEvent *e)
+{
+  if(_recorder)
+  {
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle(tr("Exit NeuroTessMesh"));
+    msgBox.setWindowIcon( QIcon( ":/icons/rsc/neurotessmesh.png" ));
+    msgBox.setText(tr("A recording is being made. Do you really want to exit NeuroTessMesh?"));
+    msgBox.setStandardButtons(QMessageBox::Cancel|QMessageBox::Yes);
+
+    if(msgBox.exec() != QMessageBox::Yes)
+    {
+      e->ignore();
+      return;
+    }
+
+    RecorderUtils::stopAndWait(_recorder, this);
+    _recorder = nullptr;
+  }
+
+  QMainWindow::closeEvent(e);
 }
