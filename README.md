@@ -10,8 +10,8 @@ adaptive resolution along the model. The soma shape is recovered from the
 incomplete information of the tracings, applying a physical deformation model
 that can be interactively adjusted.
 
-See [NeuroTessMesh web page](http://gmrv.es/neurotessmesh/) and
-[NeuroTessMesh  manual](http://gmrv.es/neurotessmesh/NeuroTessMeshUserManual.pdf)
+See [NeuroTessMesh web page](http://vg-lab.es/neurotessmesh/) and
+[NeuroTessMesh  manual](http://vg-lab.es/neurotessmesh/NeuroTessMeshUserManual.pdf)
 for a complete description and sample data tests.
 
 ## Dependencies
@@ -36,7 +36,7 @@ High Sierra and Windows 10 64-bits with Visual Studio 2015. Please ensure that
 you build the Release version in order to get the best performance possible.
 
 ```bash
-git clone https://gitlab.gmrv.es/nsviz/NeuroTessMesh.git
+git clone https://github.com/vg-lab/NeuroTessMesh.git
 mkdir neurotessmesh/build && cd neurotessmesh/build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make
