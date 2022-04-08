@@ -1,8 +1,9 @@
-set(Name neurotessmesh)
+set(Name NeuroTessMesh)
 set(NAME NEUROTESSMESH)
 set(namespace neurotessmesh)
 set(NAMESPACE NEUROTESSMESH)
 set(INCLUDE_NAME neurotessmesh)
+set(NeuroTessMesh_DESKTOP NeuroTessMesh.desktop)
 
 set(PROJECT_VERSION_ABI ${${PROJECT_NAME}_VERSION_ABI})
 configure_file(${CMAKE_SOURCE_DIR}/CMake/common/cpp/api.h
@@ -89,4 +90,4 @@ if ( UNIX AND NOT APPLE )
 endif( )
 
 
-common_application( neurotessmesh GUI ${COMMON_APP_ARGS} )
+common_application( NeuroTessMesh GUI ${COMMON_APP_ARGS} )

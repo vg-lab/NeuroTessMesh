@@ -5,8 +5,8 @@
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-project(neurotessmesh VERSION 0.2.2)
-set(neurotessmesh_VERSION_ABI 1)
+project(NeuroTessMesh VERSION 0.2.2)
+set(NeuroTessMesh_VERSION_ABI 1)
 
 # Disable in source building
 if( "${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}" )
@@ -37,7 +37,7 @@ endif()
 include(GitExternal)
 
 #description
-set( NEUROTESSMESH_DESCRIPTION "neurotessmesh")
+set( NEUROTESSMESH_DESCRIPTION "NeuroTessMesh")
 set( NEUROTESSMESH_MAINTAINER "Juan Jose Garcia Cantero <juanjose.garcia@urjc.es>")
 set( NEUROTESSMESH_LICENSE LGPL)
 set( COMMON_PROJECT_DOMAIN es.vg-lab)
