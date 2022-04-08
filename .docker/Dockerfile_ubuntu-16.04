@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends mesa-utils libc
 
 COPY avahi-daemon.conf /etc/avahi
 
-COPY install/bin/NeuroTessMesh /usr/bin/
+COPY install/bin/neurotessmesh /usr/bin/
 COPY install/lib /usr/lib/
 COPY install/include /usr/include/
 COPY install/share /usr/share/
