@@ -5,8 +5,8 @@
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-project(NeuroTessMesh VERSION 0.2.2)
-set(NeuroTessMesh_VERSION_ABI 1)
+project(neurotessmesh VERSION 0.2.2)
+set(neurotessmesh_VERSION_ABI 1)
 
 # Disable in source building
 if( "${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}" )
