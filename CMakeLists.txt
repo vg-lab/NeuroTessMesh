@@ -37,7 +37,7 @@ endif()
 include(GitExternal)
 
 #description
-set( NEUROTESSMESH_DESCRIPTION "NeuroTessMesh")
+set( NEUROTESSMESH_DESCRIPTION "neurotessmesh")
 set( NEUROTESSMESH_MAINTAINER "Juan Jose Garcia Cantero <juanjose.garcia@urjc.es>")
 set( NEUROTESSMESH_LICENSE LGPL)
 set( COMMON_PROJECT_DOMAIN es.vg-lab)
