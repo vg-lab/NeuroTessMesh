@@ -373,6 +373,15 @@ void OpenGLWidget::initializeGL( void )
   glLineWidth( 1.5 );
 
   QOpenGLWidget::initializeGL( );
+
+  const GLubyte* vendor = glGetString(GL_VENDOR); // Returns the vendor
+  const GLubyte* renderer = glGetString(GL_RENDERER); // Returns a hint to the model
+  const GLubyte* version = glGetString(GL_VERSION);
+  const GLubyte* shadingVer = glGetString(GL_SHADING_LANGUAGE_VERSION);
+
+  std::cout << "OpenGL Hardware: " << vendor << " (" << renderer << ")" << std::endl;
+  std::cout << "OpenGL Version: " << version << " (shading ver. " << shadingVer << ")" << std::endl;
+
   nlrender::Config::init( );
   _scene = new neurotessmesh::Scene( _camera );
 }
