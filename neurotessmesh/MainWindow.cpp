@@ -153,6 +153,18 @@ void MainWindow::init( const std::string& zeqSession_ )
   connect( _selectedNeuronRender, SIGNAL( currentIndexChanged( int )),
            _openGLWidget, SLOT( changeSelectedNeuronPiece( int )));
   _selectedNeuronRender->currentIndexChanged( 0 );
+
+  connect(_ui->actionLoad_camera_positions, SIGNAL(triggered(bool)), this,
+            SLOT(loadCameraPositions()));
+
+  connect(_ui->actionSave_camera_positions, SIGNAL(triggered(bool)), this,
+            SLOT(saveCameraPositions()));
+
+  connect(_ui->actionAdd_camera_position, SIGNAL(triggered(bool)), this,
+            SLOT(addCameraPosition()));
+
+  connect(_ui->actionRemove_camera_position, SIGNAL(triggered(bool)), this,
+            SLOT(removeCameraPosition()));
 }
 
 void MainWindow::showStatusBarMessage ( const QString& message )
@@ -436,6 +448,26 @@ void MainWindow::finishRecording( )
     actionRecorder->setEnabled( true );
     actionRecorder->setChecked( false );
   }
+}
+
+void MainWindow::loadCameraPositions()
+{
+}
+
+void MainWindow::saveCameraPositions()
+{
+}
+
+void MainWindow::addCameraPosition()
+{
+}
+
+void MainWindow::removeCameraPosition()
+{
+}
+
+void MainWindow::applyCameraPosition()
+{
 }
 
 void MainWindow::_generateNeuritesLayout( void )
