@@ -99,6 +99,12 @@ namespace neurotessmesh
     void home( void );
 
     /**
+     * Method to animate the camera to the given position, radius and rotation
+     */
+    NEUROTESSMESH_API
+    void cameraPosition(const Eigen::Vector3f &position, const float radius, const Eigen::Matrix3f &rotation);
+
+    /**
      * Method to compute axis align bounding box
      * @param indices_ vector of indices to compute the bounding box
      * @return axis align bounding box
@@ -215,6 +221,13 @@ namespace neurotessmesh
      *
      */
     void animate(const Eigen::Vector3f &position, const float radius);
+
+    /** \brief Animates the camera to the given position, radius and rotation.
+     * \param[in] position Focus position.
+     * \param[in] radius Aperture radius.
+     * \param[in] rotation Camera rotation matrix.
+     */
+    void animatePosition(const Eigen::Vector3f &position, const float radius, const Eigen::Matrix3f &rotation, bool rotAnimation);
 
     //! Scene mode
     TSceneMode _mode;

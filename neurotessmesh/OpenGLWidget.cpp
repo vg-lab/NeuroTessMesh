@@ -212,6 +212,7 @@ void OpenGLWidget::setCameraPosition(const CameraPosition &pos)
 {
   if(_camera)
   {
+    _scene->cameraPosition(pos.position, pos.radius, pos.rotation);
     _camera->position(pos.position);
     _camera->radius(pos.radius);
     _camera->rotation(pos.rotation);

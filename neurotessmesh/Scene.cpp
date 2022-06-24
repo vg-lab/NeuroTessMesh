@@ -124,6 +124,11 @@ namespace neurotessmesh
     animate(position, radius);
   }
 
+  void Scene::cameraPosition(const Eigen::Vector3f &position, const float radius, const Eigen::Matrix3f &rotation)
+  {
+    animatePosition(position, radius, rotation, true);
+  }
+
   nlgeometry::AxisAlignedBoundingBox Scene::computeBoundingBox(
     std::vector< unsigned int > indices_ )
   {
@@ -450,6 +455,13 @@ namespace neurotessmesh
 
   void Scene::animate(const Eigen::Vector3f &position, const float radius)
   {
+    const auto rotation = Eigen::Matrix3f::Zero();
+    animatePosition(position, radius, rotation, false);
+  }
+
+  void Scene::animatePosition(const Eigen::Vector3f &position, const float radius, const Eigen::Matrix3f &rotation,
+                              bool rotAnimation)
+  {
     if(_camera->isAniming())
     {
       _camera->stopAnim();
@@ -457,10 +469,11 @@ namespace neurotessmesh
     }
 
     constexpr float CAMERA_ANIMATION_DURATION = 2.f;
-    const auto rotation = Eigen::Vector3f{0.f, 0.f, 0.f };
+
+    auto rotInterpolation = rotAnimation ? reto::CameraAnimation::LINEAR : reto::CameraAnimation::NONE;
 
     _animation = new reto::CameraAnimation(reto::CameraAnimation::LINEAR,
-                                           reto::CameraAnimation::NONE,
+                                           rotInterpolation,
                                            reto::CameraAnimation::LINEAR);
 
     auto startCam = new reto::KeyCamera(0.f, _camera->position(),
