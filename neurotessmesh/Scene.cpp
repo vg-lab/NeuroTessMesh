@@ -121,12 +121,12 @@ namespace neurotessmesh
     const auto position = _boundingBox.center();
     const auto radius = _boundingBox.radius( ) / FOV;
 
-    animate(position, radius);
+    animateCamera(position, radius);
   }
 
   void Scene::cameraPosition(const Eigen::Vector3f &position, const float radius, const Eigen::Matrix3f &rotation)
   {
-    animatePosition(position, radius, rotation, true);
+    animateCamera(position, radius, rotation, true);
   }
 
   nlgeometry::AxisAlignedBoundingBox Scene::computeBoundingBox(
@@ -355,7 +355,7 @@ namespace neurotessmesh
           mode( Scene::EDITION );
           std::vector< unsigned int >indices = { id_ };
           auto aabb = computeBoundingBox( indices );
-          animate(aabb.center(),  aabb.radius( ) / sin( _camera->camera()->fieldOfView()));
+          animateCamera(aabb.center(),  aabb.radius( ) / sin( _camera->camera()->fieldOfView()));
         }
         else
           _editNeuron = nullptr;
@@ -366,7 +366,7 @@ namespace neurotessmesh
   unsigned int Scene::numEditMorphologyNeurites( void ) const
   {
     if ( _editNeuron )
-      return ( unsigned int )_editNeuron->morphology( )->neurites( ).size( );
+      return static_cast<unsigned int>(_editNeuron->morphology( )->neurites( ).size( ));
     return 0;
   }
 
@@ -445,21 +445,15 @@ namespace neurotessmesh
     if ( indices_.size( ) > 0 )
     {
       auto aabb = computeBoundingBox( indices_ );
-      animate( aabb.center( ), aabb.radius( ) / sin( _camera->camera()->fieldOfView()));
+      animateCamera( aabb.center( ), aabb.radius( ) / sin( _camera->camera()->fieldOfView()));
     }
     else
     {
-      animate( _boundingBox.center( ),  _boundingBox.radius( ) / sin( _camera->camera()->fieldOfView()));
+      animateCamera( _boundingBox.center( ),  _boundingBox.radius( ) / sin( _camera->camera()->fieldOfView()));
     }
   }
 
-  void Scene::animate(const Eigen::Vector3f &position, const float radius)
-  {
-    const auto rotation = Eigen::Matrix3f::Zero();
-    animatePosition(position, radius, rotation, false);
-  }
-
-  void Scene::animatePosition(const Eigen::Vector3f &position, const float radius, const Eigen::Matrix3f &rotation,
+  void Scene::animateCamera(const Eigen::Vector3f &position, const float radius, const Eigen::Matrix3f &rotation,
                               bool rotAnimation)
   {
     if(_camera->isAniming())
@@ -469,8 +463,7 @@ namespace neurotessmesh
     }
 
     constexpr float CAMERA_ANIMATION_DURATION = 2.f;
-
-    auto rotInterpolation = rotAnimation ? reto::CameraAnimation::LINEAR : reto::CameraAnimation::NONE;
+    const auto rotInterpolation = rotAnimation ? reto::CameraAnimation::LINEAR : reto::CameraAnimation::NONE;
 
     _animation = new reto::CameraAnimation(reto::CameraAnimation::LINEAR,
                                            rotInterpolation,
@@ -487,5 +480,4 @@ namespace neurotessmesh
 
     _camera->startAnim(_animation);
   }
-
 }

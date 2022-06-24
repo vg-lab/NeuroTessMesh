@@ -215,19 +215,17 @@ namespace neurotessmesh
     NEUROTESSMESH_API
     void focusOnIndices( const std::vector< unsigned int >& indices_ );
   protected:
-    /** \brief Animates the camera to the given position and radius.
-     * \param[in] position Focus position.
-     * \param[in] radius Aperture radius.
-     *
-     */
-    void animate(const Eigen::Vector3f &position, const float radius);
-
     /** \brief Animates the camera to the given position, radius and rotation.
      * \param[in] position Focus position.
      * \param[in] radius Aperture radius.
      * \param[in] rotation Camera rotation matrix.
+     * \param[in] rotAnimation true to animate rotation and false otherwise.
+     *
      */
-    void animatePosition(const Eigen::Vector3f &position, const float radius, const Eigen::Matrix3f &rotation, bool rotAnimation);
+    void animateCamera(const Eigen::Vector3f &position,
+                       const float radius,
+                       const Eigen::Matrix3f &rotation = Eigen::Matrix3f::Zero(),
+                       bool rotAnimation = false);
 
     //! Scene mode
     TSceneMode _mode;
