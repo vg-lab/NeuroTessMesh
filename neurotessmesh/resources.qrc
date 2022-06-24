@@ -13,5 +13,6 @@
     <file>rsc/home.png</file>
     <file>rsc/settings.png</file>
     <file>rsc/neurotessmesh.png</file>
+    <file>rsc/eye.svg</file>
   </qresource>
 </RCC>

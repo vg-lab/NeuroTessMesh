@@ -198,6 +198,28 @@ void OpenGLWidget::setZeqSession( const std::string&
 }
 #endif
 
+CameraPosition OpenGLWidget::cameraPosition() const
+{
+  CameraPosition pos;
+  pos.position = _camera->position();
+  pos.radius   = _camera->radius();
+  pos.rotation = _camera->rotation();
+
+  return pos;
+}
+
+void OpenGLWidget::setCameraPosition(const CameraPosition &pos)
+{
+  if(_camera)
+  {
+    _scene->cameraPosition(pos.position, pos.radius, pos.rotation);
+    _camera->position(pos.position);
+    _camera->radius(pos.radius);
+    _camera->rotation(pos.rotation);
+    update();
+  }
+}
+
 void OpenGLWidget::changeClearColor( QColor color )
 {
     makeCurrent( );

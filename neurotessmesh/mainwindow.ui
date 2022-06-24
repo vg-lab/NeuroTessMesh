@@ -36,6 +36,9 @@
     <addaction name="actionOpenSWCFile"/>
     <addaction name="actionCloseData"/>
     <addaction name="separator"/>
+    <addaction name="actionLoad_camera_positions"/>
+    <addaction name="actionSave_camera_positions"/>
+    <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -49,6 +52,9 @@
      <string>Options</string>
     </property>
     <addaction name="actionHome"/>
+    <addaction name="actionAdd_camera_position"/>
+    <addaction name="actionRemove_camera_position"/>
+    <addaction name="actionCamera_Positions"/>
     <addaction name="actionUpdateOnIdle"/>
     <addaction name="actionShowFPSOnIdleUpdate"/>
     <addaction name="actionWireframe"/>
@@ -296,6 +302,53 @@
    </property>
    <property name="toolTip">
     <string>Enable advanced recorder options</string>
+   </property>
+  </action>
+  <action name="actionLoad_camera_positions">
+   <property name="text">
+    <string>Load camera positions...</string>
+   </property>
+   <property name="toolTip">
+    <string>Load camera positions from a file on disk.</string>
+   </property>
+  </action>
+  <action name="actionSave_camera_positions">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Save camera positions...</string>
+   </property>
+   <property name="toolTip">
+    <string>Save camera positions to a file on disk.</string>
+   </property>
+  </action>
+  <action name="actionAdd_camera_position">
+   <property name="text">
+    <string>Add camera position...</string>
+   </property>
+  </action>
+  <action name="actionRemove_camera_position">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Remove camera position...</string>
+   </property>
+  </action>
+  <action name="actionCamera_Positions">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/rsc/eye.svg</normaloff>:/icons/rsc/eye.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Camera positions</string>
+   </property>
+   <property name="toolTip">
+    <string>Camera positions list.</string>
    </property>
   </action>
  </widget>
