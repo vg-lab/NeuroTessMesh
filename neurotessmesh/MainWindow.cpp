@@ -482,7 +482,7 @@ void MainWindow::loadCameraPositions()
     directory = QFileInfo(_lastOpenedFileName).dir();
 
   QFileDialog fDialog(this);
-  fDialog.setWindowIcon(QIcon(":/visimpl.png"));
+  fDialog.setWindowIcon(QIcon(":/icons/rsc/neurotessmesh.png"));
   fDialog.setWindowTitle(title);
   fDialog.setAcceptMode(QFileDialog::AcceptMode::AcceptOpen);
   fDialog.setDefaultSuffix("json");
@@ -519,7 +519,7 @@ void MainWindow::loadCameraPositions()
     msgbox.setWindowTitle(title);
     msgbox.setIcon(QMessageBox::Icon::Critical);
     msgbox.setText(message);
-    msgbox.setWindowIcon(QIcon(":/visimpl.png"));
+    msgbox.setWindowIcon(QIcon(":/icons/rsc/neurotessmesh.png"));
     msgbox.setStandardButtons(QMessageBox::Ok);
     msgbox.setDetailedText(parserError.errorString());
     msgbox.exec();
@@ -535,7 +535,7 @@ void MainWindow::loadCameraPositions()
     msgbox.setWindowTitle(title);
     msgbox.setIcon(QMessageBox::Icon::Critical);
     msgbox.setText(message);
-    msgbox.setWindowIcon(QIcon(":/visimpl.png"));
+    msgbox.setWindowIcon(QIcon(":/icons/rsc/neurotessmesh.png"));
     msgbox.setStandardButtons(QMessageBox::Ok);
     msgbox.exec();
     return;
@@ -552,7 +552,7 @@ void MainWindow::loadCameraPositions()
     msgbox.setWindowTitle(title);
     msgbox.setIcon(QMessageBox::Icon::Question);
     msgbox.setText(message);
-    msgbox.setWindowIcon(QIcon(":/visimpl.png"));
+    msgbox.setWindowIcon(QIcon(":/icons/rsc/neurotessmesh.png"));
     msgbox.setStandardButtons(QMessageBox::Cancel|QMessageBox::Ok);
     msgbox.setDefaultButton(QMessageBox::Ok);
 
@@ -612,7 +612,7 @@ void MainWindow::saveCameraPositions()
   }
 
   QFileDialog fDialog(this);
-  fDialog.setWindowIcon(QIcon(":/visimpl.png"));
+  fDialog.setWindowIcon(QIcon(":/icons/rsc/neurotessmesh.png"));
   fDialog.setWindowTitle("Save camera positions");
   fDialog.setAcceptMode(QFileDialog::AcceptMode::AcceptSave);
   fDialog.setDefaultSuffix("json");
@@ -640,7 +640,7 @@ void MainWindow::saveCameraPositions()
     msgbox.setWindowTitle(tr("Save camera positions"));
     msgbox.setIcon(QMessageBox::Icon::Critical);
     msgbox.setText(message);
-    msgbox.setWindowIcon(QIcon(":/visimpl.png"));
+    msgbox.setWindowIcon(QIcon(":/icons/rsc/neurotessmesh.png"));
     msgbox.setDefaultButton(QMessageBox::Ok);
     msgbox.exec();
     return;
@@ -690,7 +690,7 @@ void MainWindow::saveCameraPositions()
     msgbox.setIcon(QMessageBox::Icon::Critical);
     msgbox.setText(message);
     msgbox.setDetailedText(wFile.errorString());
-    msgbox.setWindowIcon(QIcon(":/visimpl.png"));
+    msgbox.setWindowIcon(QIcon(":/icons/rsc/neurotessmesh.png"));
     msgbox.setDefaultButton(QMessageBox::Ok);
     msgbox.exec();
   }
