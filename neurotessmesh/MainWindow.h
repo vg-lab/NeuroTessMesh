@@ -71,6 +71,31 @@ protected slots:
 
   void finishRecording( );
 
+  /** \brief Loads camera positions from a file.
+   *
+   */
+  void loadCameraPositions();
+
+  /** \brief Saves camera positions to a file on disk.
+   *
+   */
+  void saveCameraPositions();
+
+  /** \brief Stores current camera position in the positions list.
+   *
+   */
+  void addCameraPosition();
+
+  /** \brief Lets the user select a position to remove from the positions list.
+   *
+   */
+  void removeCameraPosition();
+
+  /** \brief Changes the camera position to the one specified by the user.
+   *
+   */
+  void applyCameraPosition();
+
 protected:
   virtual void closeEvent(QCloseEvent *e) override;
 
