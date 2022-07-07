@@ -3,5 +3,5 @@
 # git_subproject(ZeroEQ https://github.com/HBPVis/ZeroEQ.git 1e66ee3)
 # git_subproject(Lexis https://github.com/HBPVis/Lexis.git 617eedb)
 # git_subproject(gmrvlex git@gitlab.gmrv.es:nsviz/gmrvlex.git c20b194)
-git_subproject(neurolots https://github.com/gmrvvis/neurolots.git 2a1cfeb9)
+git_subproject(neurolots https://github.com/gmrvvis/neurolots.git e6f592f1 )
 git_subproject( acuterecorder https://github.com/vg-lab/AcuteRecorder.git 0b84c2b1 )
