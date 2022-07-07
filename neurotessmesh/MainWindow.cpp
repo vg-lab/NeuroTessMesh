@@ -98,6 +98,8 @@ MainWindow::~MainWindow( void )
 void MainWindow::init( const std::string& zeqSession_ )
 {
   _openGLWidget->idleUpdate( _ui->actionUpdateOnIdle->isChecked( ));
+
+  // @felix If session is empty should it connect to DEFAULT?
   if ( !zeqSession_.empty( ))
     _openGLWidget->setZeqSession( zeqSession_ );
 

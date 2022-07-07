@@ -22,6 +22,11 @@
 #include <nlrender/nlrender.h>
 
 const float OpenGLWidget::_colorFactor = 1 / 255.0f;
+const QString FPSLABEL_STYLESHEET = "QLabel { background-color : #333;"
+                                    "color : white;"
+                                    "padding: 3px;"
+                                    "margin: 10px;"
+                                    "border-radius: 10px;}";
 
 OpenGLWidget::OpenGLWidget( QWidget* parent_,
                             Qt::WindowFlags windowsFlags_ )
@@ -43,18 +48,21 @@ OpenGLWidget::OpenGLWidget( QWidget* parent_,
   , _subscriberThread( nullptr )
 #endif
 {
-  _camera = new reto::OrbitalCameraController( );
+  try
+  {
+    _camera = new reto::OrbitalCameraController( );
+  }
+  catch(...)
+  {
+    _camera = new reto::OrbitalCameraController(nullptr, reto::Camera::NO_ZEROEQ);
+  }
+
   _cameraTimer = new QTimer( );
   _cameraTimer->start(( 1.0f / 60.f ) * 100 );
   connect( _cameraTimer, SIGNAL( timeout( )), this, SLOT( timerUpdate( )));
-  _fpsLabel.setStyleSheet(
-    "QLabel { background-color : #333;"
-    "color : white;"
-    "padding: 3px;"
-    "margin: 10px;"
-    " border-radius: 10px;}" );
+  _fpsLabel.setStyleSheet(FPSLABEL_STYLESHEET);
 
-  // This is needed to get key evends
+  // This is needed to get key events
   this->setFocusPolicy( Qt::WheelFocus );
 
   _lastSavedFileName = QDir::currentPath( );
@@ -141,7 +149,14 @@ void OpenGLWidget::setZeqSession( const std::string&
       delete _camera;
     }
 
-    _camera = new reto::OrbitalCameraController( nullptr, session_ );
+    try
+    {
+      _camera = new reto::OrbitalCameraController( nullptr, session_ );
+    }
+    catch(...)
+    {
+      _camera = new reto::OrbitalCameraController(nullptr, reto::Camera::NO_ZEROEQ);
+    }
 
     if ( _subscriberThread )
     {
@@ -322,13 +337,13 @@ void OpenGLWidget::extractEditNeuronMesh( void )
 
 void OpenGLWidget::onLotValueChanged( int value_ )
 {
-  _scene->levelOfDetail( (( float )value_) * 0.1  );
+  _scene->levelOfDetail(static_cast<float>(value_) * 0.1  );
   update( );
 }
 
 void OpenGLWidget::onDistanceValueChanged( int value_ )
 {
-  _scene->maximumDistance(( float ) value_ / 1000.0f );
+  _scene->maximumDistance(static_cast<float>(value_) / 1000.0f );
   update( );
 }
 
@@ -421,24 +436,21 @@ void OpenGLWidget::paintGL( void )
 #define FRAMES_PAINTED_TO_MEASURE_FPS 10
   if ( _frameCount % FRAMES_PAINTED_TO_MEASURE_FPS  == 0 )
   {
-    std::chrono::time_point< std::chrono::system_clock > now =
-      std::chrono::system_clock::now( );
+    const auto now = std::chrono::system_clock::now( );
 
     const auto duration =
       std::chrono::duration_cast<std::chrono::milliseconds>( now - _then );
     _then = now;
 
-    MainWindow* mainWindow = dynamic_cast< MainWindow* >( parent( ));
+    auto mainWindow = dynamic_cast< MainWindow* >( parent( ));
     if ( mainWindow )
     {
       const unsigned int ellapsedMiliseconds = duration.count( );
 
       const unsigned int fps = roundf( 1000.0f *
-                                 float( FRAMES_PAINTED_TO_MEASURE_FPS ) /
-                                 float( ellapsedMiliseconds ));
+                                 static_cast<float>( FRAMES_PAINTED_TO_MEASURE_FPS ) /
+                                 static_cast<float>( ellapsedMiliseconds ));
 
-      // mainWindow->showStatusBarMessage(
-      //   QString::number( fps ) + QString( " FPS" ));
       if ( _showFps )
       {
         _fpsLabel.setVisible( true );
@@ -484,7 +496,6 @@ void OpenGLWidget::mousePressEvent( QMouseEvent* event_ )
   }
 
   update( );
-
 }
 
 void OpenGLWidget::mouseReleaseEvent( QMouseEvent* event_ )
@@ -500,7 +511,6 @@ void OpenGLWidget::mouseReleaseEvent( QMouseEvent* event_ )
   }
 
   update( );
-
 }
 
 void OpenGLWidget::mouseMoveEvent( QMouseEvent* event_ )
