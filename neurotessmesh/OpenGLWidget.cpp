@@ -8,17 +8,20 @@
  * Do not distribute without further notice.
  */
 
+
 #include "OpenGLWidget.h"
+#include "MainWindow.h"
+
 #include <QOpenGLContext>
 #include <QMouseEvent>
 #include <QColorDialog>
 #include <QFileDialog>
 #include <QMessageBox>
+
 #include <sstream>
 #include <string>
 #include <iostream>
 
-#include "MainWindow.h"
 #include <nlrender/nlrender.h>
 
 const float OpenGLWidget::_colorFactor = 1 / 255.0f;
