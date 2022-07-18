@@ -5,7 +5,7 @@
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-project(NeuroTessMesh VERSION 0.3.1)
+project(NeuroTessMesh VERSION 0.3.2)
 set(NeuroTessMesh_VERSION_ABI 1)
 
 # Disable in source building
@@ -50,7 +50,6 @@ common_find_package(Qt5OpenGL 5.4 SYSTEM REQUIRED)
 common_find_package(Eigen3 SYSTEM REQUIRED)
 common_find_package(GLEW SYSTEM REQUIRED)
 common_find_package(neurolots REQUIRED)
-common_find_package(ReTo REQUIRED)
 common_find_package(Lexis ${NEUROTESSMESH_OPTS_FIND_ARGS})
 common_find_package(ZeroEQ ${NEUROTESSMESH_OPTS_FIND_ARGS})
 common_find_package(gmrvlex ${NEUROTESSMESH_OPTS_FIND_ARGS})
@@ -58,7 +57,7 @@ common_find_package(GLUT SYSTEM)
 common_find_package(Boost COMPONENTS system filesystem SYSTEM)
 common_find_package( acuterecorder REQUIRED )
 
-list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Qt5Core Qt5Widget Qt5OpenGL GLEW neurolots ReTo acuterecorder)
+list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Qt5Core Qt5Widget Qt5OpenGL GLEW neurolots acuterecorder)
 
 if ( ZEROEQ_FOUND )
   common_find_package(Threads REQUIRED)
