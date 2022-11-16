@@ -28,6 +28,14 @@
 #include <nlrender/nlrender.h>
 
 #include <neurotessmesh/api.h>
+#ifdef NEUROTESSMESH_USE_SIMIL
+  #include <simil/simil.h>
+#endif
+#include <QPalette>
+
+class QColor;
+
+typedef std::vector< std::pair< float , Eigen::Vector3f >> Gradient;
 
 namespace neurotessmesh
 {
@@ -40,69 +48,80 @@ namespace neurotessmesh
 
     typedef enum
     {
-      VISUALIZATION = 0,
+      VISUALIZATION = 0 ,
       EDITION
-    }TSceneMode;
+    } TSceneMode;
 
     typedef enum
     {
-      BlueConfig,
-      SWC,
+      BlueConfig ,
+      SWC ,
       NsolScene
     } TDataFileType;
 
-    typedef std::tuple< nlgeometry::Meshes, std::vector< Eigen::Matrix4f >>
+    typedef std::tuple< nlgeometry::Meshes , std::vector< Eigen::Matrix4f >>
       NeuronMeshes;
 
     /**
      * Default constructor
      */
     NEUROTESSMESH_API
-    Scene( reto::OrbitalCameraController* camera_ );
+    explicit Scene( reto::OrbitalCameraController* camera = nullptr,
+                    nsol::DataSet* dataset = nullptr
+#ifdef NEUROTESSMESH_USE_SIMIL
+                    , simil::SpikesPlayer* player = nullptr
+#endif
+                    );
 
     /**
      * Default destructor
      */
     NEUROTESSMESH_API
-    ~Scene( void );
+    ~Scene( );
 
     /**
      * Method to set the scene mode
      * @param mode_ new scnene mode
      */
     NEUROTESSMESH_API
-    void mode( const TSceneMode mode_ );
+    void mode( TSceneMode mode_ );
 
     /**
      * Method to get the scene mode
      * @return the current scene mode
      */
     NEUROTESSMESH_API
-    TSceneMode mode( void ) const;
+    TSceneMode mode( ) const;
 
     /**
-     * Method to renderize the scene based on the current mode
+     * This method updates the scene with the current spikes.
+     */
+    void update();
+
+    /**
+     * Method to rendering the scene based on the current mode
      */
     NEUROTESSMESH_API
-    void render( void );
+    void render( );
 
     /**
      * Method to close and deleted data from dataSet
      */
     NEUROTESSMESH_API
-    void close( void );
+    void close( );
 
     /**
      * Method to set the scene params to default
      */
     NEUROTESSMESH_API
-    void home( void );
+    void home( );
 
     /**
      * Method to animate the camera to the given position, radius and rotation
      */
     NEUROTESSMESH_API
-    void cameraPosition(const Eigen::Vector3f &position, const float radius, const Eigen::Matrix3f &rotation);
+    void cameraPosition( const Eigen::Vector3f& position , float radius ,
+                         const Eigen::Matrix3f& rotation );
 
     /**
      * Method to compute axis align bounding box
@@ -111,32 +130,20 @@ namespace neurotessmesh
      */
     NEUROTESSMESH_API
     nlgeometry::AxisAlignedBoundingBox
-    computeBoundingBox( std::vector< unsigned int > indices_ );
+    computeBoundingBox( const std::vector< unsigned int >& indices_ );
 
     /**
      * Method to compute axis align bounding box
      * @return axis align bounding box for all the current neurons
      */
     NEUROTESSMESH_API
-    nlgeometry::AxisAlignedBoundingBox computeBoundingBox( void );
+    nlgeometry::AxisAlignedBoundingBox computeBoundingBox( );
 
     /**
      * Method to generate the meshes associated to the loaded neurons
      */
     NEUROTESSMESH_API
-    void generateMeshes( void );
-
-    /**
-     * Method to load neurons data returns an empty string on success
-     * or an error string otherwise.
-     * @param fileName path to the file
-     * @param fileType type of file
-     * @param target to load, specific param to BlueConfig data
-     */
-    NEUROTESSMESH_API
-    std::string loadData( const std::string& fileName_,
-                   const TDataFileType fileType_,
-                   const std::string& target_ = std::string( "" ));
+    void generateMeshes( );
 
     /**
      * Method to set the render options of unseletected and selected neurons
@@ -144,10 +151,13 @@ namespace neurotessmesh
      */
     NEUROTESSMESH_API
     void paintUnselectedSoma( bool paint_ );
+
     NEUROTESSMESH_API
     void paintUnselectedNeurites( bool paint_ );
+
     NEUROTESSMESH_API
     void paintSelectedSoma( bool paint_ );
+
     NEUROTESSMESH_API
     void paintSelectedNeurites( bool paint_ );
 
@@ -159,11 +169,25 @@ namespace neurotessmesh
     void unselectedNeuronColor( Eigen::Vector3f color_ );
 
     /**
+     * Method to change the unselected neuron color
+     * @param color_ color of the unselected neuron
+     */
+    NEUROTESSMESH_API
+    void unselectedNeuronColor( const QColor& color_ );
+
+    /**
      * Method to change the selected neuron color
      * @param color_ color of the selected neuron
      */
     NEUROTESSMESH_API
     void selectedNeuronColor( Eigen::Vector3f color_ );
+
+    /**
+     * Method to change the selected neuron color
+     * @param color_ color of the selected neuron
+     */
+    NEUROTESSMESH_API
+    void selectedNeuronColor( const QColor& color_ );
 
     /**
      * Method to set the scene level of subdivision
@@ -188,32 +212,33 @@ namespace neurotessmesh
                               subdivisionCriteria_ );
 
     NEUROTESSMESH_API
-    std::vector< unsigned int > neuronIndices( void );
+    std::vector< unsigned int > neuronIndices( );
 
     NEUROTESSMESH_API
     void setNeuronToEdit( unsigned int id_ );
 
     NEUROTESSMESH_API
-    unsigned int numEditMorphologyNeurites( void ) const;
+    unsigned int numEditMorphologyNeurites( ) const;
 
     NEUROTESSMESH_API
-    void regenerateEditNeuronMesh( const float alphaRadius,
+    void regenerateEditNeuronMesh( float alphaRadius ,
                                    const std::vector< float >& alphaNeurites_ );
 
     NEUROTESSMESH_API
-    bool isEditNeuronMeshExtraction( void );
+    bool isEditNeuronMeshExtraction( );
 
     NEUROTESSMESH_API
     void extractEditNeuronMesh( const std::string& path_ );
 
     NEUROTESSMESH_API
-    void conformRenderTuples( void );
+    void conformRenderTuples( );
 
     NEUROTESSMESH_API
     void changeSelectedIndices( const std::vector< unsigned int >& indices_ );
 
     NEUROTESSMESH_API
     void focusOnIndices( const std::vector< unsigned int >& indices_ );
+
   protected:
     /** \brief Animates the camera to the given position, radius and rotation.
      * \param[in] position Focus position.
@@ -222,17 +247,23 @@ namespace neurotessmesh
      * \param[in] rotAnimation true to animate rotation and false otherwise.
      *
      */
-    void animateCamera(const Eigen::Vector3f &position,
-                       const float radius,
-                       const Eigen::Matrix3f &rotation = Eigen::Matrix3f::Zero(),
-                       bool rotAnimation = false);
+    void animateCamera( const Eigen::Vector3f& position ,
+                        float radius ,
+                        const Eigen::Matrix3f& rotation = Eigen::Matrix3f::Zero( ) ,
+                        bool rotAnimation = false );
+
+    /** \brief Updates the color and time array of the unselected neurons.
+     * \param[in] timestamp Current player time.
+     *
+     */
+    std::vector< Eigen::Vector3f > calculateUnselectedColors( float timestamp );
 
     //! Scene mode
     TSceneMode _mode;
 
     //! Scene camera
     reto::OrbitalCameraController* _camera;
-    reto::CameraAnimation *_animation;
+    reto::CameraAnimation* _animation;
 
     //! Neurolots engine to render morphological data
     nlrender::Renderer* _renderer;
@@ -249,9 +280,14 @@ namespace neurotessmesh
     //! Nsol DataSet, contains neurons
     nsol::DataSet* _dataSet;
 
+#ifdef NEUROTESSMESH_USE_SIMIL
+    // SimIL spikes data.
+    simil::SpikesPlayer* _simulationPlayer;
+#endif
+
     //! Neuron Meshes
-    std::unordered_map< nsol::MorphologyPtr, nlgeometry::MeshPtr >
-    _neuronMeshes;
+    std::unordered_map< nsol::MorphologyPtr , nlgeometry::MeshPtr >
+      _neuronMeshes;
 
     //! Unselected neuron meshes
     NeuronMeshes _unselectedNeurons;
@@ -276,6 +312,11 @@ namespace neurotessmesh
 
     //! Scene bonunding box
     nlgeometry::AxisAlignedBoundingBox _boundingBox;
+
+    //! Activation timestamps.
+    std::unordered_map< nlgeometry::MeshPtr , float > _activationTimestamps;
+    Gradient _gradient;
+    float _delay;
   };
 
 }

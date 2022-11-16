@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="48"
+   height="48"
+   id="svg7854"
+   sodipodi:version="0.32"
+   inkscape:version="1.0.1 (3bc2e813f5, 2020-09-07)"
+   version="1.0"
+   sodipodi:docname="play.svg"
+   inkscape:output_extension="org.inkscape.output.svg.inkscape"
+   inkscape:export-filename="/home/lapo/Desktop/media-icons.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
+  <defs
+     id="defs7856">
+    <linearGradient
+       id="linearGradient7577">
+      <stop
+         style="stop-color:#000000;stop-opacity:0.3137255;"
+         offset="0"
+         id="stop7579" />
+      <stop
+         style="stop-color:#ffffff;stop-opacity:1"
+         offset="1"
+         id="stop7581" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient7305">
+      <stop
+         style="stop-color:#ffffff;stop-opacity:1"
+         offset="0"
+         id="stop7307" />
+      <stop
+         id="stop7313"
+         offset="0.20971029"
+         style="stop-color:#ffffff;stop-opacity:0;" />
+      <stop
+         style="stop-color:#ffffff;stop-opacity:0.81065089;"
+         offset="0.34936365"
+         id="stop7329" />
+      <stop
+         id="stop7321"
+         offset="0.42850056"
+         style="stop-color:#ffffff;stop-opacity:0;" />
+      <stop
+         style="stop-color:#ffffff;stop-opacity:1;"
+         offset="0.52134049"
+         id="stop7323" />
+      <stop
+         id="stop7317"
+         offset="0.55746967"
+         style="stop-color:#ffffff;stop-opacity:0;" />
+      <stop
+         style="stop-color:#ffffff;stop-opacity:0.56804734;"
+         offset="0.71001518"
+         id="stop7319" />
+      <stop
+         id="stop7416"
+         offset="0.74394959"
+         style="stop-color:#ffffff;stop-opacity:0;" />
+      <stop
+         style="stop-color:#ffffff;stop-opacity:0"
+         offset="1"
+         id="stop7309" />
+    </linearGradient>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#afafaf"
+     borderopacity="1"
+     gridtolerance="10000"
+     guidetolerance="10"
+     objecttolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="11.313708"
+     inkscape:cx="11.71144"
+     inkscape:cy="30.327794"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     width="48px"
+     height="48px"
+     inkscape:showpageshadow="false"
+     inkscape:window-width="1920"
+     inkscape:window-height="1018"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     showgrid="false"
+     inkscape:grid-points="true"
+     showborder="true"
+     showguides="false"
+     inkscape:guide-bbox="true"
+     borderlayer="true"
+     inkscape:document-rotation="0"
+     inkscape:window-maximized="1">
+    <sodipodi:guide
+       orientation="horizontal"
+       position="13.125"
+       id="guide7377" />
+    <sodipodi:guide
+       orientation="horizontal"
+       position="5.4800776"
+       id="guide7379" />
+    <sodipodi:guide
+       orientation="horizontal"
+       position="35"
+       id="guide7492" />
+    <sodipodi:guide
+       orientation="horizontal"
+       position="48"
+       id="guide7046" />
+    <sodipodi:guide
+       orientation="horizontal"
+       position="-17.5"
+       id="guide7233" />
+    <sodipodi:guide
+       orientation="horizontal"
+       position="-29"
+       id="guide7235" />
+    <sodipodi:guide
+       orientation="horizontal"
+       position="22.097087"
+       id="guide7556" />
+    <sodipodi:guide
+       orientation="vertical"
+       position="-76.125"
+       id="guide7644" />
+    <sodipodi:guide
+       orientation="vertical"
+       position="-26.125"
+       id="guide7646" />
+    <sodipodi:guide
+       orientation="vertical"
+       position="24"
+       id="guide7648" />
+    <sodipodi:guide
+       orientation="vertical"
+       position="-125.28125"
+       id="guide7665" />
+    <sodipodi:guide
+       orientation="vertical"
+       position="-175.125"
+       id="guide7667" />
+    <sodipodi:guide
+       orientation="vertical"
+       position="-225.83223"
+       id="guide7685" />
+    <sodipodi:guide
+       orientation="vertical"
+       position="-326.06462"
+       id="guide7695" />
+    <inkscape:grid
+       id="GridFromPre046Settings"
+       type="xygrid"
+       originx="0"
+       originy="0"
+       spacingx="0.5"
+       spacingy="0.5"
+       color="#3f3fff"
+       empcolor="#3f3fff"
+       opacity="0.15"
+       empopacity="0.38"
+       empspacing="2" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata7859">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>Lapo Calamandrei</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <dc:source />
+        <cc:license
+           rdf:resource="http://creativecommons.org/licenses/GPL/2.0/" />
+        <dc:title>Play</dc:title>
+        <dc:subject>
+          <rdf:Bag>
+            <rdf:li>play</rdf:li>
+            <rdf:li>playback</rdf:li>
+            <rdf:li>start</rdf:li>
+            <rdf:li>begin</rdf:li>
+          </rdf:Bag>
+        </dc:subject>
+      </cc:Work>
+      <cc:License
+         rdf:about="http://creativecommons.org/licenses/GPL/2.0/">
+        <cc:permits
+           rdf:resource="http://web.resource.org/cc/Reproduction" />
+        <cc:permits
+           rdf:resource="http://web.resource.org/cc/Distribution" />
+        <cc:requires
+           rdf:resource="http://web.resource.org/cc/Notice" />
+        <cc:permits
+           rdf:resource="http://web.resource.org/cc/DerivativeWorks" />
+        <cc:requires
+           rdf:resource="http://web.resource.org/cc/ShareAlike" />
+        <cc:requires
+           rdf:resource="http://web.resource.org/cc/SourceCode" />
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       id="path7671"
+       style="opacity:1;fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dashoffset:0.7;stroke-opacity:1"
+       inkscape:original="M -186.5 10.5 L -186.5 37.5 L -163.5 24 L -186.5 10.5 z "
+       inkscape:radius="1.5026019"
+       sodipodi:type="inkscape:offset"
+       d="M -186.52734,8.9980469 A 1.5027521,1.5027521 0 0 0 -188.00195,10.5 v 27 a 1.5027521,1.5027521 0 0 0 2.26172,1.294922 l 23,-13.5 a 1.5027521,1.5027521 0 0 0 0,-2.589844 l -23,-13.4999999 a 1.5027521,1.5027521 0 0 0 -0.78711,-0.2070312 z"
+       transform="translate(200)" />
+  </g>
+</svg>

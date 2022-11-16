@@ -59,6 +59,7 @@
     <addaction name="actionShowFPSOnIdleUpdate"/>
     <addaction name="actionWireframe"/>
     <addaction name="actionRenderOptions"/>
+    <addaction name="actionSimulation_player_options"/>
     <addaction name="actionEditSave"/>
     <addaction name="actionConfiguration"/>
    </widget>
@@ -94,6 +95,7 @@
    <addaction name="actionWireframe"/>
    <addaction name="actionCloseData"/>
    <addaction name="actionRenderOptions"/>
+   <addaction name="actionSimulation_player_options"/>
    <addaction name="separator"/>
   </widget>
   <action name="actionQuit">
@@ -349,6 +351,21 @@
    </property>
    <property name="toolTip">
     <string>Camera positions list.</string>
+   </property>
+  </action>
+  <action name="actionSimulation_player_options">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/rsc/play.svg</normaloff>:/icons/rsc/play.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Simulation player options</string>
+   </property>
+   <property name="toolTip">
+    <string>Shows/hides the player options.</string>
    </property>
   </action>
  </widget>

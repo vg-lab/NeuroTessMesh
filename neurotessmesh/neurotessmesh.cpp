@@ -10,13 +10,16 @@
 
 #include <QApplication>
 #include <QDir>
-#include "MainWindow.h"
-#include <QDebug>
 #include <QOpenGLWidget>
 #include <QErrorMessage>
 
+#include "MainWindow.h"
+
 #include <neurotessmesh/version.h>
+
+#include <cstring>
 #include <sstream>
+#include <iostream>
 #include <locale>
 
 #define GL_MINIMUM_REQUIRED_MAJOR 4
@@ -25,7 +28,7 @@
 
 bool setFormat( int ctxOpenGLMajor, int ctxOpenGLMinor,
                 int ctxOpenGLSamples, int ctxOpenGLVSync );
-void usageMessage(  char* progName );
+void usageMessage(const char* progName);
 void dumpVersion( void );
 bool atLeastTwo( bool a, bool b, bool c );
 
@@ -40,6 +43,8 @@ int main( int argc, char** argv )
   std::locale prev_locale = std::locale::global(std::locale::classic());
 
   QApplication application(argc,argv);
+
+  const auto programName = argv[0];
 
   std::string blueConfig;
   std::string swcFile;
@@ -61,7 +66,7 @@ int main( int argc, char** argv )
     if ( std::strcmp( argv[i], "--help" ) == 0 ||
          std::strcmp( argv[i], "-h" ) == 0 )
     {
-      usageMessage( argv[0] );
+      usageMessage(programName);
       return 0;
     }
     if ( std::strcmp( argv[i], "--version" ) == 0 )
@@ -88,7 +93,7 @@ int main( int argc, char** argv )
         blueConfig = std::string( argv[ i ]);
       }
       else
-        usageMessage( argv[0] );
+        usageMessage(programName);
 
     }
     if( std::strcmp( argv[ i ], "-swc" ) == 0 )
@@ -98,7 +103,7 @@ int main( int argc, char** argv )
         swcFile = std::string( argv[ i ]);
       }
       else
-        usageMessage( argv[0] );
+        usageMessage(programName);
 
     }
     if( std::strcmp( argv[ i ], "-xml" ) == 0 )
@@ -108,7 +113,7 @@ int main( int argc, char** argv )
         sceneFile = std::string( argv[ i ]);
       }
       else
-        usageMessage( argv[0] );
+        usageMessage(programName);
 
     }
     if( std::strcmp( argv[ i ], "-target" ) == 0 )
@@ -118,7 +123,7 @@ int main( int argc, char** argv )
         target = std::string( argv[ i ]);
       }
       else
-        usageMessage( argv[0] );
+        usageMessage(programName);
 
     }
     if ( strcmp( argv[i], "--fullscreen" ) == 0 ||
@@ -136,7 +141,7 @@ int main( int argc, char** argv )
     {
       initWindowSize = true;
       if ( i + 2 >= argc )
-        usageMessage( argv[0] );
+        usageMessage(programName);
       initWindowWidth = atoi( argv[ ++i ] );
       initWindowHeight = atoi( argv[ ++i ] );
 
@@ -145,7 +150,7 @@ int main( int argc, char** argv )
          strcmp( argv[i],"-cv") == 0 )
     {
       if ( i + 2 >= argc )
-        usageMessage( argv[0] );
+        usageMessage(programName);
       ctxOpenGLMajor = atoi( argv[ ++i ] );
       ctxOpenGLMinor = atoi( argv[ ++i ] );
 
@@ -154,7 +159,7 @@ int main( int argc, char** argv )
          strcmp( argv[i],"-s") == 0 )
     {
       if ( i + 1 >= argc )
-        usageMessage( argv[0] );
+        usageMessage(programName);
       ctxOpenGLSamples = atoi( argv[ ++i ] );
 
     }
@@ -189,7 +194,7 @@ int main( int argc, char** argv )
     {
       std::cerr << "Error: -swc, -xml and -bc options are exclusive"
                 << std::endl;
-      usageMessage( argv[0] );
+      usageMessage(programName);
     }
 
     if ( !blueConfig.empty() )
@@ -223,7 +228,7 @@ int main( int argc, char** argv )
   return returnVal;
 }
 
-void usageMessage( char* progName )
+void usageMessage(const char* progName)
 {
   std::cerr << std::endl
             << "Usage: "
