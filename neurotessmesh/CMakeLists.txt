@@ -22,11 +22,13 @@ set( NEUROTESSMESH_SOURCES
   ColorSelectionWidget.cpp
   CMakeSetup.rc
   Scene.cpp
+  LoaderThread.cpp
   )
 
 set( NEUROTESSMESH_HEADERS
   ${PROJECT_BINARY_DIR}/include/neurotessmesh/version.h
   Scene.h
+  LoaderThread.h
   )
 
 set(NEUROTESSMESH_MOC_HEADERS
@@ -48,7 +50,10 @@ set( NEUROTESSMESH_LINK_LIBRARIES
   nlrender
   acuterecorder
   )
-
+  
+if (NEUROTESSMESH_OPTIONALS_AS_REQUIRED)
+  list( APPEND NEUROTESSMESH_LINK_LIBRARIES SimIL QSimIL Brion Brain)
+endif()
 
 if ( ZEROEQ_FOUND )
   list( APPEND NEUROTESSMESH_LINK_LIBRARIES ZeroEQ )

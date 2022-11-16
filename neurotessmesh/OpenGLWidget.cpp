@@ -11,30 +11,32 @@
 
 #include "OpenGLWidget.h"
 #include "MainWindow.h"
+#include "Scene.h"
 
 #include <QOpenGLContext>
 #include <QMouseEvent>
 #include <QColorDialog>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QDebug>
 
 #include <sstream>
 #include <string>
 #include <iostream>
+#include <utility>
 
 #include <nlrender/nlrender.h>
 
-const float OpenGLWidget::_colorFactor = 1 / 255.0f;
 const QString FPSLABEL_STYLESHEET = "QLabel { background-color : #333;"
                                     "color : white;"
                                     "padding: 3px;"
                                     "margin: 10px;"
                                     "border-radius: 10px;}";
 
-OpenGLWidget::OpenGLWidget( QWidget* parent_,
+OpenGLWidget::OpenGLWidget( QWidget* parent_ ,
                             Qt::WindowFlags windowsFlags_ )
-  : QOpenGLWidget( parent_, windowsFlags_ )
-  , _scene{nullptr}
+  : QOpenGLWidget( parent_ , windowsFlags_ )
+  , _scene( nullptr )
   , _mouseX( 0 )
   , _mouseY( 0 )
   , _rotation( false )
@@ -47,23 +49,24 @@ OpenGLWidget::OpenGLWidget( QWidget* parent_,
   , _showFps( false )
   , _frameCount( 0 )
 #ifdef NEUROTESSMESH_USE_LEXIS
-  , _subscriber( nullptr )
-  , _subscriberThread( nullptr )
+, _subscriber( nullptr )
+, _subscriberThread( nullptr )
 #endif
 {
   try
   {
     _camera = new reto::OrbitalCameraController( );
   }
-  catch(...)
+  catch ( ... )
   {
-    _camera = new reto::OrbitalCameraController(nullptr, reto::Camera::NO_ZEROEQ);
+    _camera = new reto::OrbitalCameraController( nullptr ,
+                                                 reto::Camera::NO_ZEROEQ );
   }
 
   _cameraTimer = new QTimer( );
   _cameraTimer->start(( 1.0f / 60.f ) * 100 );
-  connect( _cameraTimer, SIGNAL( timeout( )), this, SLOT( timerUpdate( )));
-  _fpsLabel.setStyleSheet(FPSLABEL_STYLESHEET);
+  connect( _cameraTimer , SIGNAL( timeout( )) , this , SLOT( timerUpdate( )));
+  _fpsLabel.setStyleSheet( FPSLABEL_STYLESHEET );
 
   // This is needed to get key events
   this->setFocusPolicy( Qt::WheelFocus );
@@ -71,36 +74,16 @@ OpenGLWidget::OpenGLWidget( QWidget* parent_,
   _lastSavedFileName = QDir::currentPath( );
 }
 
-OpenGLWidget::~OpenGLWidget( void )
+OpenGLWidget::~OpenGLWidget( )
 {
   delete _camera;
-  delete _scene;
   delete _cameraTimer;
 }
 
-bool OpenGLWidget::loadData(
-  const std::string& fileName_,
-  const neurotessmesh::Scene::TDataFileType fileType_,
-  const std::string& target_ )
+void OpenGLWidget::setScene( std::shared_ptr< neurotessmesh::Scene > scene )
 {
+  _scene = std::move( scene );
   makeCurrent( );
-  const auto errorString = _scene->loadData( fileName_, fileType_, target_ );
-
-  if(!errorString.empty())
-  {
-    const QString message = QString("Error loading file '%1'.\n%2")
-                             .arg(QString::fromStdString(fileName_))
-                             .arg(QString::fromStdString(errorString));
-
-    QMessageBox msgBox(this);
-    msgBox.setWindowTitle(tr("Error Loading Data"));
-    msgBox.setWindowIcon(QIcon(":/icons/rsc/neurotessmesh.png"));
-    msgBox.setText(message);
-    msgBox.setIcon(QMessageBox::Icon::Critical);
-    msgBox.exec();
-  }
-
-  return errorString.empty();
 }
 
 void OpenGLWidget::idleUpdate( bool idleUpdate_ )
@@ -108,60 +91,35 @@ void OpenGLWidget::idleUpdate( bool idleUpdate_ )
   _idleUpdate = idleUpdate_;
 }
 
-const std::vector< unsigned int > OpenGLWidget::neuronIdList( void ) const
+void OpenGLWidget::home( )
 {
-  return _scene->neuronIndices( );
-}
-
-void OpenGLWidget::neuronToEdit( const unsigned int id_ )
-{
-  _scene->setNeuronToEdit( id_ );
-  update( );
-}
-
-unsigned int OpenGLWidget::numNeuritesToEdit( void ) const
-{
-  return _scene->numEditMorphologyNeurites( );
-}
-
-void OpenGLWidget::regenerateNeuronToEdit(
-  const float alphaRadius_,
-  const std::vector< float >& alphaNeurites_ )
-{
-  makeCurrent( );
-  _scene->regenerateEditNeuronMesh( alphaRadius_, alphaNeurites_ );
-  update( );
-}
-
-void OpenGLWidget::home( void )
-{
-  _scene->home( );
   update( );
 }
 
 void OpenGLWidget::setZeqSession( const std::string&
 
 #ifdef NEUROTESSMESH_USE_LEXIS
-                                  session_
-  )
+  session_
+)
 {
-  if ( !session_.empty( ))
+  if (!session_.empty())
   {
-    if ( _camera )
+    if (_camera)
     {
       delete _camera;
     }
 
     try
     {
-      _camera = new reto::OrbitalCameraController( nullptr, session_ );
+      _camera = new reto::OrbitalCameraController(nullptr, session_);
     }
-    catch(...)
+    catch (...)
     {
-      _camera = new reto::OrbitalCameraController(nullptr, reto::Camera::NO_ZEROEQ);
+      _camera = new reto::OrbitalCameraController(nullptr,
+          reto::Camera::NO_ZEROEQ);
     }
 
-    if ( _subscriberThread )
+    if (_subscriberThread)
     {
       _subscriberThread->~thread();
       delete _subscriberThread;
@@ -170,119 +128,82 @@ void OpenGLWidget::setZeqSession( const std::string&
 
     try
     {
-    _subscriber = new zeroeq::Subscriber( session_ );
+      _subscriber = new zeroeq::Subscriber(session_);
 
-    _subscriber->subscribe(
-      lexis::data::SelectedIDs::ZEROBUF_TYPE_IDENTIFIER( ),
-      [&]( const void* selectedData, size_t selectedSize )
-      { _onSelectionEvent( lexis::data::SelectedIDs::create(
-                             selectedData, selectedSize ));});
+      _subscriber->subscribe(
+          lexis::data::SelectedIDs::ZEROBUF_TYPE_IDENTIFIER(),
+          [&](const void *selectedData, size_t selectedSize)
+          { _onSelectionEvent( lexis::data::SelectedIDs::create(
+                    selectedData, selectedSize ));});
 
 #ifdef NEUROTESSMESH_USE_GMRVLEX
-    _subscriber->subscribe(
-      zeroeq::gmrv::FocusedIDs::ZEROBUF_TYPE_IDENTIFIER( ),
-      [&]( const void* focusedData, size_t focusedSize )
-      { _onFocusEvent( zeroeq::gmrv::FocusedIDs::create(
-                             focusedData, focusedSize ));});
+      _subscriber->subscribe(
+          zeroeq::gmrv::FocusedIDs::ZEROBUF_TYPE_IDENTIFIER(),
+          [&](const void *focusedData, size_t focusedSize)
+          { _onFocusEvent( zeroeq::gmrv::FocusedIDs::create(
+                    focusedData, focusedSize ));});
 #endif
 
-    _subscriberThread =
-      new std::thread( [&](){
-          try
-          {
-            while ( true )
-              _subscriber->receive( 10000 );
-          }
-          catch( ... )
-          {
-            std::cerr << "Connexion closed" << std::endl;
-          }
-        });
+      _subscriberThread = new std::thread([&]()
+      {
+        try
+        {
+          while ( true )
+          _subscriber->receive( 10000 );
+        }
+        catch( ... )
+        {
+          std::cerr << "EXCEPTION: ZeroEQ Conection closed -> "
+          << __FILE__ << ":" << __LINE__ << std::endl;
+        }
+      });
 
     }
-    catch ( ... )
+    catch (...)
     {
       std::cerr << "Zeroeq Session Error: could not connect to " << session_
-                << " session" << std::endl;
+          << " session" << std::endl;
     }
   }
 }
-
 #else
-
-  )
+                                )
 {
   std::cerr << "Zeq not supported " << std::endl;
 }
+
 #endif
 
-CameraPosition OpenGLWidget::cameraPosition() const
+reto::OrbitalCameraController* OpenGLWidget::getCamera( ) const
+{
+  return _camera;
+}
+
+CameraPosition OpenGLWidget::cameraPosition( ) const
 {
   CameraPosition pos;
-  pos.position = _camera->position();
-  pos.radius   = _camera->radius();
-  pos.rotation = _camera->rotation();
+  pos.position = _camera->position( );
+  pos.radius = _camera->radius( );
+  pos.rotation = _camera->rotation( );
 
   return pos;
 }
 
-void OpenGLWidget::setCameraPosition(const CameraPosition &pos)
-{
-  if(_camera)
-  {
-    _scene->cameraPosition(pos.position, pos.radius, pos.rotation);
-    _camera->position(pos.position);
-    _camera->radius(pos.radius);
-    _camera->rotation(pos.rotation);
-    update();
-  }
-}
-
-void OpenGLWidget::changeClearColor( QColor color )
-{
-    makeCurrent( );
-    glClearColor( float( color.red( )) * _colorFactor,
-                  float( color.green( )) * _colorFactor,
-                  float( color.blue( )) * _colorFactor,
-                  float( color.alpha( )) * _colorFactor);
-    update( );
-}
-
-void OpenGLWidget::changeNeuronColor( QColor color )
-{
-  makeCurrent( );
-  _scene->unselectedNeuronColor(
-    Eigen::Vector3f( float( color.red( )) * _colorFactor,
-                     float( color.green( )) * _colorFactor,
-                     float( color.blue( )) * _colorFactor ));
-  update( );
-}
-
-void OpenGLWidget::changeSelectedNeuronColor(  QColor color )
-{
-  makeCurrent( );
-  _scene->selectedNeuronColor(
-    Eigen::Vector3f( float( color.red( )) * _colorFactor,
-                     float( color.green( )) * _colorFactor,
-                     float( color.blue( )) * _colorFactor ));
-  update( );
-}
-
-void OpenGLWidget::toggleUpdateOnIdle( void )
+void OpenGLWidget::toggleUpdateOnIdle( )
 {
   _idleUpdate = !_idleUpdate;
   if ( _idleUpdate )
     update( );
 }
 
-void OpenGLWidget::toggleShowFPS( void )
+void OpenGLWidget::toggleShowFPS( )
 {
   _showFps = !_showFps;
   if ( _idleUpdate )
     update( );
 }
 
-void OpenGLWidget::toggleWireframe( void )
+void OpenGLWidget::toggleWireframe( )
 {
   makeCurrent( );
   _wireframe = !_wireframe;
@@ -290,45 +211,45 @@ void OpenGLWidget::toggleWireframe( void )
   if ( _wireframe )
   {
     glEnable( GL_POLYGON_OFFSET_LINE );
-    glPolygonOffset( -1, -1 );
+    glPolygonOffset( -1 , -1 );
     glLineWidth( 1.5 );
-    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    glPolygonMode( GL_FRONT_AND_BACK , GL_LINE );
   }
   else
   {
-    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+    glPolygonMode( GL_FRONT_AND_BACK , GL_FILL );
     glDisable( GL_POLYGON_OFFSET_LINE );
   }
 
   update( );
 }
 
-void OpenGLWidget::timerUpdate( void )
+void OpenGLWidget::timerUpdate( )
 {
-  if( _camera->isAniming() )
+  if ( _camera->isAniming( ))
   {
-    _camera->anim();
+    _camera->anim( );
     this->update( );
   }
 }
 
-void OpenGLWidget::extractEditNeuronMesh( void )
+void OpenGLWidget::extractEditNeuronMesh( )
 {
-  if( _scene->isEditNeuronMeshExtraction( ))
+  if ( _scene->isEditNeuronMeshExtraction( ))
   {
     QString path;
     const QString filter( tr( "OBJ (*.obj);; All files (*)" ));
-    QFileDialog fd(this, QString( "Save mesh to OBJ file" ),
-                   _lastSavedFileName, filter );
+    QFileDialog fd( this , QString( "Save mesh to OBJ file" ) ,
+                    _lastSavedFileName , filter );
 
-    fd.setOption( QFileDialog::DontUseNativeDialog, true );
-    fd.setDefaultSuffix( "obj") ;
+    fd.setOption( QFileDialog::DontUseNativeDialog , true );
+    fd.setDefaultSuffix( "obj" );
     fd.setFileMode( QFileDialog/*::FileMode*/::AnyFile );
     fd.setAcceptMode( QFileDialog/*::AcceptMode*/::AcceptSave );
     if ( fd.exec( ))
-      path = fd.selectedFiles( )[0];
+      path = fd.selectedFiles( )[ 0 ];
 
-    if ( !path.isEmpty() )
+    if ( !path.isEmpty( ))
     {
       _lastSavedFileName = QFileInfo( path ).path( );
       this->makeCurrent( );
@@ -340,73 +261,87 @@ void OpenGLWidget::extractEditNeuronMesh( void )
 
 void OpenGLWidget::onLotValueChanged( int value_ )
 {
-  _scene->levelOfDetail(static_cast<float>(value_) * 0.1  );
-  update( );
+  if ( _scene )
+  {
+    _scene->levelOfDetail( static_cast<float>(value_) * 0.1f );
+    update( );
+  }
 }
 
 void OpenGLWidget::onDistanceValueChanged( int value_ )
 {
-  _scene->maximumDistance(static_cast<float>(value_) / 1000.0f );
-  update( );
+  if ( _scene )
+  {
+    _scene->maximumDistance( static_cast<float>(value_) / 1000.0f );
+    update( );
+  }
 }
 
-void OpenGLWidget::onHomogeneousClicked( void )
+void OpenGLWidget::onHomogeneousClicked( )
 {
-  _scene->subdivisionCriteria( nlrender::Renderer::HOMOGENEOUS );
-  update( );
+  if ( _scene )
+  {
+    _scene->subdivisionCriteria( nlrender::Renderer::HOMOGENEOUS );
+    update( );
+  }
 }
 
-void OpenGLWidget::onLinearClicked( void )
+void OpenGLWidget::onLinearClicked( )
 {
-  _scene->subdivisionCriteria( nlrender::Renderer::LINEAR );
-  update( );
+  if ( _scene )
+  {
+    _scene->subdivisionCriteria( nlrender::Renderer::LINEAR );
+    update( );
+  }
 }
+
 void OpenGLWidget::changeNeuronPiece( int index_ )
 {
-  switch( index_ )
+  if ( !_scene ) return;
+  switch ( index_ )
   {
-  case 0:
-    _scene->paintUnselectedSoma( true );
-    _scene->paintUnselectedNeurites( true );
-    break;
-  case 1:
-    _scene->paintUnselectedSoma( true );
-    _scene->paintUnselectedNeurites( false );
-    break;
-  case 2:
-    _scene->paintUnselectedSoma( false );
-    _scene->paintUnselectedNeurites( true );
-    break;
+    case 0:
+      _scene->paintUnselectedSoma( true );
+      _scene->paintUnselectedNeurites( true );
+      break;
+    case 1:
+      _scene->paintUnselectedSoma( true );
+      _scene->paintUnselectedNeurites( false );
+      break;
+    case 2:
+      _scene->paintUnselectedSoma( false );
+      _scene->paintUnselectedNeurites( true );
+      break;
   }
   update( );
 }
 
 void OpenGLWidget::changeSelectedNeuronPiece( int index_ )
 {
-  switch( index_ )
+  if ( !_scene ) return;
+  switch ( index_ )
   {
-  case 0:
-    _scene->paintSelectedSoma( true );
-    _scene->paintSelectedNeurites( true );
-    break;
-  case 1:
-    _scene->paintSelectedSoma( true );
-    _scene->paintSelectedNeurites( false );
-    break;
-  case 2:
-    _scene->paintSelectedSoma( false );
-    _scene->paintSelectedNeurites( true );
-    break;
+    case 0:
+      _scene->paintSelectedSoma( true );
+      _scene->paintSelectedNeurites( true );
+      break;
+    case 1:
+      _scene->paintSelectedSoma( true );
+      _scene->paintSelectedNeurites( false );
+      break;
+    case 2:
+      _scene->paintSelectedSoma( false );
+      _scene->paintSelectedNeurites( true );
+      break;
   }
   update( );
 }
 
-void OpenGLWidget::initializeGL( void )
+void OpenGLWidget::initializeGL( )
 {
   initializeOpenGLFunctions( );
-
   glEnable( GL_DEPTH_TEST );
-  glClearColor(  1.0f, 1.0f, 1.0f, 1.0f );
+  glClearColor( 1.0f , 1.0f , 1.0f , 1.0f );
   glPolygonMode( GL_FRONT_AND_BACK , GL_FILL );
   glEnable( GL_CULL_FACE );
 
@@ -414,35 +349,40 @@ void OpenGLWidget::initializeGL( void )
 
   QOpenGLWidget::initializeGL( );
 
-  const GLubyte* vendor = glGetString(GL_VENDOR); // Returns the vendor
-  const GLubyte* renderer = glGetString(GL_RENDERER); // Returns a hint to the model
-  const GLubyte* version = glGetString(GL_VERSION);
-  const GLubyte* shadingVer = glGetString(GL_SHADING_LANGUAGE_VERSION);
+  const GLubyte* vendor = glGetString( GL_VENDOR ); // Returns the vendor
+  const GLubyte* renderer = glGetString(
+    GL_RENDERER ); // Returns a hint to the model
+  const GLubyte* version = glGetString( GL_VERSION );
+  const GLubyte* shadingVer = glGetString( GL_SHADING_LANGUAGE_VERSION );
 
-  std::cout << "OpenGL Hardware: " << vendor << " (" << renderer << ")" << std::endl;
-  std::cout << "OpenGL Version: " << version << " (shading ver. " << shadingVer << ")" << std::endl;
+  std::cout << "OpenGL Hardware: " << vendor << " (" << renderer << ")"
+            << std::endl;
+  std::cout << "OpenGL Version: " << version << " (shading ver. " << shadingVer
+            << ")" << std::endl;
 
   nlrender::Config::init( );
-  _scene = new neurotessmesh::Scene( _camera );
 }
 
-void OpenGLWidget::paintGL( void )
+void OpenGLWidget::paintGL( )
 {
-  makeCurrent( );
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-  _scene->render( );
+  if ( _scene != nullptr )
+  {
+    _scene->update();
+    _scene->render( );
+  }
 
   glUseProgram( 0 );
   glFlush( );
 
 #define FRAMES_PAINTED_TO_MEASURE_FPS 10
-  if ( _frameCount % FRAMES_PAINTED_TO_MEASURE_FPS  == 0 )
+  if ( _frameCount % FRAMES_PAINTED_TO_MEASURE_FPS == 0 )
   {
     const auto now = std::chrono::system_clock::now( );
 
     const auto duration =
-      std::chrono::duration_cast<std::chrono::milliseconds>( now - _then );
+      std::chrono::duration_cast< std::chrono::milliseconds >( now - _then );
     _then = now;
 
     auto mainWindow = dynamic_cast< MainWindow* >( parent( ));
@@ -450,9 +390,11 @@ void OpenGLWidget::paintGL( void )
     {
       const unsigned int ellapsedMiliseconds = duration.count( );
 
-      const unsigned int fps = roundf( 1000.0f *
-                                 static_cast<float>( FRAMES_PAINTED_TO_MEASURE_FPS ) /
-                                 static_cast<float>( ellapsedMiliseconds ));
+      const auto fps = static_cast<unsigned int>(roundf(
+        1000.0f *
+        static_cast<float>( FRAMES_PAINTED_TO_MEASURE_FPS ) /
+        static_cast<float>( ellapsedMiliseconds ))
+      );
 
       if ( _showFps )
       {
@@ -477,13 +419,12 @@ void OpenGLWidget::paintGL( void )
 
 void OpenGLWidget::resizeGL( int width_ , int height_ )
 {
-  _camera->windowSize(width_, height_);
-  glViewport( 0, 0, width_, height_ );
+  _camera->windowSize( width_ , height_ );
+  glViewport( 0 , 0 , width_ , height_ );
 }
 
 void OpenGLWidget::mousePressEvent( QMouseEvent* event_ )
 {
-
   if ( event_->button( ) == Qt::LeftButton )
   {
     _rotation = true;
@@ -491,49 +432,47 @@ void OpenGLWidget::mousePressEvent( QMouseEvent* event_ )
     _mouseY = event_->y( );
   }
 
-  if ( event_->button( ) ==  Qt::MidButton )
+  if ( event_->button( ) == Qt::MidButton )
   {
     _translation = true;
     _mouseX = event_->x( );
     _mouseY = event_->y( );
   }
-
-  update( );
 }
 
 void OpenGLWidget::mouseReleaseEvent( QMouseEvent* event_ )
 {
-  if ( event_->button( ) == Qt::LeftButton)
+  if ( event_->button( ) == Qt::LeftButton )
   {
     _rotation = false;
   }
 
-  if ( event_->button( ) ==  Qt::MidButton )
+  if ( event_->button( ) == Qt::MidButton )
   {
     _translation = false;
   }
-
-  update( );
 }
 
 void OpenGLWidget::mouseMoveEvent( QMouseEvent* event_ )
 {
-  if( _rotation )
+  if ( _rotation )
   {
-      _camera->rotate( Eigen::Vector3f{ -( _mouseX - event_->x( )) * _rotationScale,
-                                        -( _mouseY - event_->y( )) * _rotationScale,
-                                        0.f } );
+    _camera->rotate(
+      Eigen::Vector3f{ -( _mouseX - event_->x( )) * _rotationScale ,
+                       -( _mouseY - event_->y( )) * _rotationScale ,
+                       0.f } );
 
-      _mouseX = event_->x( );
-      _mouseY = event_->y( );  }
-  if( _translation )
+    _mouseX = event_->x( );
+    _mouseY = event_->y( );
+  }
+  if ( _translation )
   {
-      float xDis = ( event_->x() - _mouseX ) * _translationScale;
-      float yDis = ( event_->y() - _mouseY ) * _translationScale;
+    float xDis = ( event_->x( ) - _mouseX ) * _translationScale;
+    float yDis = ( event_->y( ) - _mouseY ) * _translationScale;
 
-      _camera->translate( Eigen::Vector3f( -xDis, yDis, 0.0f ));
-      _mouseX = event_->x( );
-      _mouseY = event_->y( );
+    _camera->translate( Eigen::Vector3f( -xDis , yDis , 0.0f ));
+    _mouseX = event_->x( );
+    _mouseY = event_->y( );
   }
 
   this->update( );
@@ -541,7 +480,6 @@ void OpenGLWidget::mouseMoveEvent( QMouseEvent* event_ )
 
 void OpenGLWidget::wheelEvent( QWheelEvent* event_ )
 {
-
   int delta = event_->angleDelta( ).y( );
 
   if ( delta > 0 )
@@ -550,7 +488,6 @@ void OpenGLWidget::wheelEvent( QWheelEvent* event_ )
     _camera->radius( _camera->radius( ) * 1.1f );
 
   update( );
-
 }
 
 void OpenGLWidget::keyPressEvent( QKeyEvent* event_ )
@@ -559,13 +496,32 @@ void OpenGLWidget::keyPressEvent( QKeyEvent* event_ )
 
   switch ( event_->key( ))
   {
-  case Qt::Key_C:
-    _camera->position( Eigen::Vector3f( 0.f, 0.f, 0.f ));
-    _camera->radius( 1000.0f );
-    _camera->rotation( Eigen::Vector3f{0.f, 0.f,0.f} );
-    update( );
-    break;
+    case Qt::Key_C:
+      _camera->position( Eigen::Vector3f( 0.f , 0.f , 0.f ));
+      _camera->radius( 1000.0f );
+      _camera->rotation( Eigen::Vector3f{ 0.f , 0.f , 0.f } );
+      update( );
+      break;
   }
+}
+
+void OpenGLWidget::changeClearColor( QColor qColor )
+{
+  makeCurrent( );
+  glClearColor( qColor.redF( ) , qColor.greenF( ) , qColor.blueF( ) , 1.0f );
+  update( );
+}
+
+void OpenGLWidget::changeNeuronColor( QColor qColor )
+{
+  _scene->unselectedNeuronColor( qColor );
+  update( );
+}
+
+void OpenGLWidget::changeSelectedNeuronColor( QColor qColor )
+{
+  _scene->selectedNeuronColor( qColor );
+  update( );
 }
 
 #ifdef NEUROTESSMESH_USE_LEXIS
@@ -586,4 +542,5 @@ void OpenGLWidget::_onFocusEvent(
   _scene->focusOnIndices( focusedIndices );
   update( );
 }
+
 #endif

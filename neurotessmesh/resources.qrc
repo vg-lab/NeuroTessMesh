@@ -14,5 +14,6 @@
     <file>rsc/settings.png</file>
     <file>rsc/neurotessmesh.png</file>
     <file>rsc/eye.svg</file>
+    <file>rsc/play.svg</file>
   </qresource>
 </RCC>

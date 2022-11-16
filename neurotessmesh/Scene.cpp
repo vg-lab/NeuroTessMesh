@@ -21,37 +21,64 @@
  */
 #include "Scene.h"
 
+#include <QColor>
+#include <QDebug>
+#include <utility>
 #include <nlgenerator/nlgenerator.h>
+
+constexpr float COLOR_FACTOR = 1 / 255.0f;
 
 namespace neurotessmesh
 {
-
-  Scene::Scene( reto::OrbitalCameraController* camera_ )
+  Scene::Scene( reto::OrbitalCameraController* camera ,
+                nsol::DataSet* dataset
+#ifdef NEUROTESSMESH_USE_SIMIL
+                , simil::SpikesPlayer* player
+#endif
+                )
     : _mode( VISUALIZATION )
-    , _camera( camera_ )
-    , _animation{nullptr}
-    , _unselectedColor( 0.5f, 0.5f, 0.8f )
-    , _selectedColor( 0.8f, 0.5f, 0.5f )
+    , _camera( camera )
+    , _animation( nullptr )
+    , _renderer( new nlrender::Renderer( ))
+    , _unselectedColor( 0.5f , 0.5f , 0.8f )
+    , _selectedColor( 0.8f , 0.5f , 0.5f )
+    , _dataSet( dataset )
+#ifdef NEUROTESSMESH_USE_SIMIL
+    , _simulationPlayer( player )
+#endif
     , _paintUnselectedSoma( true )
     , _paintUnselectedNeurites( true )
     , _paintSelectedSoma( true )
     , _paintSelectedNeurites( true )
     , _editNeuron( nullptr )
     , _editMesh( nullptr )
-    , _boundingBox( Eigen::Vector3f::Zero( ), Eigen::Vector3f::Zero( ))
+    , _boundingBox( Eigen::Vector3f::Zero( ) , Eigen::Vector3f::Zero( ))
+    , _activationTimestamps( )
+    , _gradient( {{ 0.0f , Eigen::Vector3f{ 1.0f , 0.0f , 0.0f }} ,
+                  { 1.0f , Eigen::Vector3f{ 0.0f , 0.0f , 1.0f }}} )
+    , _delay( 20.0f )
   {
     _attribsFormat.resize( 3 );
-    _attribsFormat[0] = nlgeometry::TAttribType::POSITION;
-    _attribsFormat[1] = nlgeometry::TAttribType::CENTER;
-    _attribsFormat[2] = nlgeometry::TAttribType::TANGENT;
-    _renderer = new nlrender::Renderer( );
-    _dataSet = new nsol::DataSet( );
+    _attribsFormat[ 0 ] = nlgeometry::TAttribType::POSITION;
+    _attribsFormat[ 1 ] = nlgeometry::TAttribType::CENTER;
+    _attribsFormat[ 2 ] = nlgeometry::TAttribType::TANGENT;
+
+    generateMeshes( );
+    _boundingBox = computeBoundingBox( );
+    _camera->position( _boundingBox.center( ));
+    _camera->radius(
+      _boundingBox.radius( ) / std::sin( _camera->camera( )->fieldOfView( )));
+    conformRenderTuples( );
   }
 
-  Scene::~Scene( void )
+  Scene::~Scene( )
   {
-    if(_renderer) delete _renderer;
-    if(_dataSet)  delete _dataSet;
+    delete _renderer;
+    if ( _dataSet )
+    {
+      _dataSet->close( );
+    }
+    delete _dataSet;
   }
 
   void Scene::mode( const Scene::TSceneMode mode_ )
@@ -59,42 +86,96 @@ namespace neurotessmesh
     _mode = mode_;
   }
 
-  Scene::TSceneMode Scene::mode( void ) const
+  Scene::TSceneMode Scene::mode( ) const
   {
     return _mode;
   }
 
-  void Scene::render( void )
+  void Scene::update( )
   {
-    Eigen::Matrix4f projection( _camera->camera()->projectionMatrix( ));
+#ifdef NEUROTESSMESH_USE_SIMIL
+    static float timeStamp = -1;
+
+    if ( _simulationPlayer != nullptr && _simulationPlayer->isPlaying( ))
+    {
+      const auto currentTime = _simulationPlayer->currentTime();
+
+      if(currentTime - timeStamp > std::numeric_limits<float>::epsilon())
+      {
+        timeStamp = currentTime;
+
+        auto spikes = _simulationPlayer->spikesNow( );
+
+        for ( auto spike = spikes.first; spike != spikes.second; ++spike )
+        {
+          auto neuronIt = _dataSet->neurons( ).find( spike->second );
+          if ( neuronIt == _dataSet->neurons( ).end( )) continue;
+          auto morphIt = _neuronMeshes.find( neuronIt->second->morphology( ));
+          if ( morphIt == _neuronMeshes.end( )) continue;
+
+          _activationTimestamps[ morphIt->second ] = spike->first;
+        }
+      }
+    }
+#endif
+  }
+
+  void Scene::render( )
+  {
+    Eigen::Matrix4f projection( _camera->camera( )->projectionMatrix( ));
     _renderer->projectionMatrix( ) = projection;
-    Eigen::Matrix4f view( _camera->camera()->viewMatrix( ));
+    Eigen::Matrix4f view( _camera->camera( )->viewMatrix( ));
     _renderer->viewMatrix( ) = view;
 
-    switch( _mode )
+    switch ( _mode )
     {
-    case VISUALIZATION:
-      _renderer->render( std::get<0>( _unselectedNeurons ),
-                         std::get<1>( _unselectedNeurons ),
-                         _unselectedColor , true, _paintUnselectedSoma,
-                         _paintUnselectedNeurites );
-      _renderer->render( std::get<0>( _selectedNeurons ),
-                         std::get<1>( _selectedNeurons ),
-                         _selectedColor , true, _paintSelectedSoma,
-                         _paintSelectedNeurites );
-      break;
-    case EDITION:
-      if ( isEditNeuronMeshExtraction( ))
-      {
-        _renderer->render( _editMesh, _editNeuron->transform( ),
-                           _unselectedColor, true,
-                           _paintUnselectedSoma, _paintUnselectedNeurites );
-      }
-      break;
+      case VISUALIZATION:
+#ifdef NEUROTESSMESH_USE_SIMIL
+        if ( _simulationPlayer != nullptr )
+        {
+          const auto timeStamp = _simulationPlayer->currentTime();
+          _renderer->render( std::get< 0 >( _unselectedNeurons ) ,
+                             std::get< 1 >( _unselectedNeurons ) ,
+                             _unselectedColor,
+                             calculateUnselectedColors(timeStamp) , true ,
+                             _paintUnselectedSoma ,
+                             _paintUnselectedNeurites );
+        }
+        else
+        {
+          _renderer->render( std::get< 0 >( _unselectedNeurons ) ,
+                             std::get< 1 >( _unselectedNeurons ) ,
+                             _unselectedColor, true ,
+                             _paintUnselectedSoma ,
+                             _paintUnselectedNeurites );
+        }
+#else
+        _renderer->render( std::get< 0 >( _unselectedNeurons ) ,
+                           std::get< 1 >( _unselectedNeurons ) ,
+                           _unselectedColor, true ,
+                           _paintUnselectedSoma ,
+                           _paintUnselectedNeurites );
+#endif
+
+        _renderer->render( std::get< 0 >( _selectedNeurons ) ,
+                           std::get< 1 >( _selectedNeurons ) ,
+                           _selectedColor , true , _paintSelectedSoma ,
+                           _paintSelectedNeurites );
+        break;
+      case EDITION:
+        if ( isEditNeuronMeshExtraction( ))
+        {
+          _renderer->render( _editMesh , _editNeuron->transform( ) ,
+                             _unselectedColor , true ,
+                             _paintUnselectedSoma , _paintUnselectedNeurites );
+        }
+        break;
+      default:
+        assert( false );
     }
   }
 
-  void Scene::close( void )
+  void Scene::close( )
   {
     _editNeuron = nullptr;
     _editMesh = nullptr;
@@ -102,35 +183,44 @@ namespace neurotessmesh
       delete neuronMesh.second;
     _neuronMeshes.clear( );
 
-    std::get<0>( _unselectedNeurons ).clear( );
-    std::get<1>( _unselectedNeurons ).clear( );
-    std::get<0>( _selectedNeurons ).clear( );
-    std::get<1>( _selectedNeurons ).clear( );
+    std::get< 0 >( _unselectedNeurons ).clear( );
+    std::get< 1 >( _unselectedNeurons ).clear( );
+    std::get< 0 >( _selectedNeurons ).clear( );
+    std::get< 1 >( _selectedNeurons ).clear( );
 
     _dataSet->close( );
+#ifdef NEUROTESSMESH_USE_SIMIL
+    if ( _simulationPlayer )
+    {
+      delete _simulationPlayer;
+      _simulationPlayer = nullptr;
+    }
+#endif
     mode( Scene::VISUALIZATION );
   }
 
-  void Scene::home( void )
+  void Scene::home( )
   {
     mode( Scene::VISUALIZATION );
     _editNeuron = nullptr;
     _editMesh = nullptr;
 
-    const float FOV = sin( _camera->camera()->fieldOfView() );
-    const auto position = _boundingBox.center();
+    const float FOV = std::sin( _camera->camera( )->fieldOfView( ));
+    const auto position = _boundingBox.center( );
     const auto radius = _boundingBox.radius( ) / FOV;
 
-    animateCamera(position, radius);
+    animateCamera( position , radius );
   }
 
-  void Scene::cameraPosition(const Eigen::Vector3f &position, const float radius, const Eigen::Matrix3f &rotation)
+  void
+  Scene::cameraPosition( const Eigen::Vector3f& position , const float radius ,
+                         const Eigen::Matrix3f& rotation )
   {
-    animateCamera(position, radius, rotation, true);
+    animateCamera( position , radius , rotation , true );
   }
 
   nlgeometry::AxisAlignedBoundingBox Scene::computeBoundingBox(
-    std::vector< unsigned int > indices_ )
+    const std::vector< unsigned int >& indices_ )
   {
     Eigen::Array3f minimum =
       Eigen::Array3f::Constant( std::numeric_limits< float >::max( ));
@@ -149,20 +239,23 @@ namespace neurotessmesh
           auto radius = morphology->soma( )->maxRadius( );
           auto center = morphology->soma( )->center( );
           Eigen::Vector4f position = neuron->transform( ) *
-            nsol::Vec4f( center.x( ) , center.y( ), center.z( ), 1.0f );
-          Eigen::Array3f minVec( position.x( ) - radius, position.y( ) - radius,
+                                     nsol::Vec4f( center.x( ) , center.y( ) ,
+                                                  center.z( ) , 1.0f );
+          Eigen::Array3f minVec( position.x( ) - radius ,
+                                 position.y( ) - radius ,
                                  position.z( ) - radius );
-          Eigen::Array3f maxVec( position.x( ) + radius, position.y( ) + radius,
+          Eigen::Array3f maxVec( position.x( ) + radius ,
+                                 position.y( ) + radius ,
                                  position.z( ) + radius );
           minimum = minimum.min( minVec );
           maximum = maximum.max( maxVec );
         }
       }
     }
-    return nlgeometry::AxisAlignedBoundingBox( minimum, maximum );
+    return { minimum , maximum };
   }
 
-  nlgeometry::AxisAlignedBoundingBox Scene::computeBoundingBox( void )
+  nlgeometry::AxisAlignedBoundingBox Scene::computeBoundingBox( )
   {
     std::vector< unsigned int > indices;
     for ( const auto& neuronIt: _dataSet->neurons( ))
@@ -172,111 +265,31 @@ namespace neurotessmesh
     return computeBoundingBox( indices );
   }
 
-  void Scene::generateMeshes( void )
+  void Scene::generateMeshes( )
   {
     for ( auto neuronIt: _dataSet->neurons( ))
     {
       auto morphology = neuronIt.second->morphology( );
-      if(morphology)
+      if ( morphology )
       {
         if ( _neuronMeshes.find( morphology ) == _neuronMeshes.end( ))
         {
           auto simplifier = nsol::Simplifier::Instance( );
           simplifier->adaptSoma( morphology );
-          simplifier->simplify( morphology, nsol::Simplifier::DIST_NODES_RADIUS );
+          simplifier->simplify( morphology ,
+                                nsol::Simplifier::DIST_NODES_RADIUS );
 
           auto mesh = nlgenerator::MeshGenerator::generateMesh( morphology );
-          mesh->uploadGPU( _attribsFormat, nlgeometry::Facet::PATCHES );
+          mesh->uploadGPU( _attribsFormat , nlgeometry::Facet::PATCHES );
           mesh->clearCPUData( );
           _neuronMeshes[ morphology ] = mesh;
         }
       }
       else
       {
-        throw std::runtime_error("Unable to load neuron morphology");
+        throw std::runtime_error( "Unable to load neuron morphology" );
       }
     }
-  }
-
-  std::string Scene::loadData( const std::string& fileName_,
-                        const TDataFileType fileType_,
-#ifdef NSOL_USE_BRION
-                        const std::string& target_
-#else
-                        const std::string& /*target_*/
-#endif
-    )
-  {
-    close( );
-    std::string errorString;
-    try{
-      switch( fileType_ )
-      {
-      case TDataFileType::BlueConfig:
-#ifdef NSOL_USE_BRION
-        _dataSet->loadBlueConfigHierarchy< nsol::Node,
-                                           nsol::NeuronMorphologySection,
-                                           nsol::Dendrite,
-                                           nsol::Axon,
-                                           nsol::Soma,
-                                           nsol::NeuronMorphology,
-                                           nsol::Neuron,
-                                           nsol::MiniColumn,
-                                           nsol::Column >( fileName_,
-                                                           target_ );
-
-        _dataSet->loadAllMorphologies< nsol::Node,
-                                       nsol::NeuronMorphologySection,
-                                       nsol::Dendrite,
-                                       nsol::Axon,
-                                       nsol::Soma,
-                                       nsol::NeuronMorphology,
-                                       nsol::Neuron,
-                                       nsol::MiniColumn,
-                                       nsol::Column >( );
-#else
-        std::cerr << "Error: Brion support not built-in" << std::endl;
-#endif
-        break;
-
-      case TDataFileType::SWC:
-        _dataSet->loadNeuronFromFile< nsol::Node,
-                                      nsol::NeuronMorphologySection,
-                                      nsol::Dendrite,
-                                      nsol::Axon,
-                                      nsol::Soma,
-                                      nsol::NeuronMorphology,
-                                      nsol::Neuron >( fileName_, 1 );
-        break;
-
-      case TDataFileType::NsolScene:
-        _dataSet->loadXmlScene< nsol::Node,
-                                nsol::NeuronMorphologySection,
-                                nsol::Dendrite,
-                                nsol::Axon,
-                                nsol::Soma,
-                                nsol::NeuronMorphology,
-                                nsol::Neuron >( fileName_ );
-        break;
-
-      default:
-        throw std::runtime_error( "Data file type not supported" );
-      }
-
-      generateMeshes( );
-      _boundingBox = computeBoundingBox( );
-      _camera->position( _boundingBox.center( ));
-      _camera->radius( _boundingBox.radius( ) / sin( _camera->camera()->fieldOfView()));
-      conformRenderTuples( );
-    }
-    catch( const std::exception &excep )
-    {
-      std::cerr << "Error: can't load file: " << fileName_ << std::endl;
-      std::cerr << excep.what( ) << std::endl;
-      errorString = std::string(excep.what());
-    }
-
-    return errorString;
   }
 
   void Scene::paintUnselectedSoma( bool paint_ )
@@ -303,24 +316,45 @@ namespace neurotessmesh
 
   void Scene::unselectedNeuronColor( Eigen::Vector3f color_ )
   {
-    _unselectedColor = color_;
+    _unselectedColor = std::move( color_ );
+
+    _gradient[1] = { 1.0f , { _unselectedColor[0], _unselectedColor[1], _unselectedColor[2] } };
+  }
+
+  void Scene::unselectedNeuronColor( const QColor& color_ )
+  {
+    unselectedNeuronColor( Eigen::Vector3f(
+      float( color_.red( )) * COLOR_FACTOR ,
+      float( color_.green( )) * COLOR_FACTOR ,
+      float( color_.blue( )) * COLOR_FACTOR
+    ));
   }
 
   void Scene::selectedNeuronColor( Eigen::Vector3f color_ )
   {
-    _selectedColor = color_;
+    _selectedColor = std::move( color_ );
+  }
+
+  void Scene::selectedNeuronColor( const QColor& color_ )
+  {
+    selectedNeuronColor( Eigen::Vector3f(
+      float( color_.red( )) * COLOR_FACTOR ,
+      float( color_.green( )) * COLOR_FACTOR ,
+      float( color_.blue( )) * COLOR_FACTOR
+    ));
   }
 
   void Scene::levelOfDetail( float lod_ )
   {
-    if(_renderer)
+    if ( _renderer )
       _renderer->lod( ) = lod_;
   }
 
   void Scene::maximumDistance( float maximumDistance_ )
   {
-    if(_renderer)
-      _renderer->maximumDistance( ) = maximumDistance_ * _camera->camera()->farPlane( );
+    if ( _renderer )
+      _renderer->maximumDistance( ) =
+        maximumDistance_ * _camera->camera( )->farPlane( );
   }
 
   void Scene::subdivisionCriteria(
@@ -329,7 +363,7 @@ namespace neurotessmesh
     _renderer->tessCriteria( subdivisionCriteria_ );
   }
 
-  std::vector< unsigned int > Scene::neuronIndices( void )
+  std::vector< unsigned int > Scene::neuronIndices( )
   {
     std::vector< unsigned int > indices;
 
@@ -348,14 +382,15 @@ namespace neurotessmesh
       _editNeuron = neuronIt->second;
       if ( _editNeuron )
       {
-        auto meshIt = _neuronMeshes.find( _editNeuron->morphology( ) );
+        auto meshIt = _neuronMeshes.find( _editNeuron->morphology( ));
         if ( meshIt != _neuronMeshes.end( ))
         {
           _editMesh = meshIt->second;
           mode( Scene::EDITION );
-          std::vector< unsigned int >indices = { id_ };
+          std::vector< unsigned int > indices = { id_ };
           auto aabb = computeBoundingBox( indices );
-          animateCamera(aabb.center(),  aabb.radius( ) / sin( _camera->camera()->fieldOfView()));
+          animateCamera( aabb.center( ) , aabb.radius( ) / std::sin(
+            _camera->camera( )->fieldOfView( )));
         }
         else
           _editNeuron = nullptr;
@@ -363,7 +398,7 @@ namespace neurotessmesh
     }
   }
 
-  unsigned int Scene::numEditMorphologyNeurites( void ) const
+  unsigned int Scene::numEditMorphologyNeurites( ) const
   {
     if ( _editNeuron )
       return static_cast<unsigned int>(_editNeuron->morphology( )->neurites( ).size( ));
@@ -371,26 +406,26 @@ namespace neurotessmesh
   }
 
   void Scene::regenerateEditNeuronMesh(
-    const float alphaRadius_,
+    const float alphaRadius_ ,
     const std::vector< float >& alphaNeurites_ )
   {
-    if (  isEditNeuronMeshExtraction( ))
+    if ( isEditNeuronMeshExtraction( ))
     {
       auto mesh = nlgenerator::MeshGenerator::generateMesh(
-        _editNeuron->morphology( ), alphaRadius_, alphaNeurites_ );
+        _editNeuron->morphology( ) , alphaRadius_ , alphaNeurites_ );
       if ( mesh )
       {
-        mesh->uploadGPU( _attribsFormat, nlgeometry::Facet::PATCHES );
+        mesh->uploadGPU( _attribsFormat , nlgeometry::Facet::PATCHES );
         mesh->clearCPUData( );
         delete _editMesh;
         _editMesh = mesh;
-        _neuronMeshes[ _editNeuron->morphology( )] = mesh;
+        _neuronMeshes[ _editNeuron->morphology( ) ] = mesh;
         conformRenderTuples( );
       }
     }
   }
 
-  bool Scene::isEditNeuronMeshExtraction( void )
+  bool Scene::isEditNeuronMeshExtraction( )
   {
     return ( _editNeuron != nullptr ) && ( _editMesh != nullptr );
   }
@@ -398,13 +433,13 @@ namespace neurotessmesh
   void Scene::extractEditNeuronMesh( const std::string& path_ )
   {
     auto extractedMesh = _renderer->extract(
-      _editMesh, _editNeuron->transform( ), _paintUnselectedSoma,
+      _editMesh , _editNeuron->transform( ) , _paintUnselectedSoma ,
       _paintUnselectedNeurites );
-    nlgeometry::ObjWriter::writeMesh( extractedMesh, path_ );
+    nlgeometry::ObjWriter::writeMesh( extractedMesh , path_ );
     delete extractedMesh;
   }
 
-  void Scene::conformRenderTuples( void )
+  void Scene::conformRenderTuples( )
   {
     nlgeometry::Meshes unselectedMeshes;
     std::vector< Eigen::Matrix4f > unselectedModels;
@@ -428,56 +463,118 @@ namespace neurotessmesh
         }
       }
     }
-    _unselectedNeurons = std::make_tuple( unselectedMeshes, unselectedModels );
-    _selectedNeurons = std::make_tuple( selectedMeshes, selectedModels );
+    _unselectedNeurons = std::make_tuple( unselectedMeshes , unselectedModels );
+    _selectedNeurons = std::make_tuple( selectedMeshes , selectedModels );
   }
 
   void Scene::changeSelectedIndices(
     const std::vector< unsigned int >& indices_ )
   {
     _selectedIndices = std::set< unsigned int >(
-      indices_.begin( ), indices_.end( ));
+      indices_.begin( ) , indices_.end( ));
     conformRenderTuples( );
   }
 
   void Scene::focusOnIndices( const std::vector< unsigned int >& indices_ )
   {
-    if ( indices_.size( ) > 0 )
+    if ( !indices_.empty( ))
     {
       auto aabb = computeBoundingBox( indices_ );
-      animateCamera( aabb.center( ), aabb.radius( ) / sin( _camera->camera()->fieldOfView()));
+      animateCamera( aabb.center( ) ,
+                     aabb.radius( ) /
+                     std::sin( _camera->camera( )->fieldOfView( )));
     }
     else
     {
-      animateCamera( _boundingBox.center( ),  _boundingBox.radius( ) / sin( _camera->camera()->fieldOfView()));
+      animateCamera( _boundingBox.center( ) , _boundingBox.radius( ) / std::sin(
+        _camera->camera( )->fieldOfView( )));
     }
   }
 
-  void Scene::animateCamera(const Eigen::Vector3f &position, const float radius, const Eigen::Matrix3f &rotation,
-                              bool rotAnimation)
+  void
+  Scene::animateCamera( const Eigen::Vector3f& position , const float radius ,
+                        const Eigen::Matrix3f& rotation ,
+                        bool rotAnimation )
   {
-    if(_camera->isAniming())
+    if ( _camera->isAniming( ))
     {
-      _camera->stopAnim();
-      if(_animation) delete _animation;
+      _camera->stopAnim( );
+      delete _animation;
     }
 
     constexpr float CAMERA_ANIMATION_DURATION = 2.f;
-    const auto rotInterpolation = rotAnimation ? reto::CameraAnimation::LINEAR : reto::CameraAnimation::NONE;
+    const auto rotInterpolation = rotAnimation ? reto::CameraAnimation::LINEAR
+                                               : reto::CameraAnimation::NONE;
 
-    _animation = new reto::CameraAnimation(reto::CameraAnimation::LINEAR,
-                                           rotInterpolation,
-                                           reto::CameraAnimation::LINEAR);
+    _animation = new reto::CameraAnimation( reto::CameraAnimation::LINEAR ,
+                                            rotInterpolation ,
+                                            reto::CameraAnimation::LINEAR );
 
-    auto startCam = new reto::KeyCamera(0.f, _camera->position(),
-                                             _camera->rotation(),
-                                             _camera->radius());
-    _animation->addKeyCamera(startCam);
+    auto startCam = new reto::KeyCamera( 0.f , _camera->position( ) ,
+                                         _camera->rotation( ) ,
+                                         _camera->radius( ));
+    _animation->addKeyCamera( startCam );
 
-    auto targetCam = new reto::KeyCamera(CAMERA_ANIMATION_DURATION,
-                                         position, rotation, radius);
-    _animation->addKeyCamera(targetCam);
+    auto targetCam = new reto::KeyCamera( CAMERA_ANIMATION_DURATION ,
+                                          position , rotation , radius );
+    _animation->addKeyCamera( targetCam );
 
-    _camera->startAnim(_animation);
+    _camera->startAnim( _animation );
+  }
+
+  std::vector< Eigen::Vector3f > Scene::calculateUnselectedColors( float timestamp )
+  {
+    auto calculateGradientColor = [ ]( const Gradient& gradient , float t )
+    {
+      if ( gradient.empty( )) return Eigen::Vector3f( 1.0f , 0.0f , 1.0f );
+      // Return last if t < 0.
+      if ( t < 0 ) return gradient[ gradient.size( ) - 1 ].second;
+      int size = static_cast<int>(gradient.size( ));
+      int first = size - 1;
+      for ( int i = 0; i < size; i++ )
+      {
+        if ( gradient[ i ].first > t )
+        {
+          first = i - 1;
+          break;
+        }
+      }
+
+      if ( first == -1 ) return gradient[ 0 ].second;
+      if ( first == size - 1 ) return gradient[ first ].second;
+
+      float start = gradient[ first ].first;
+      float end = gradient[ first + 1 ].first;
+      float normalizedT = ( t - start ) / ( end - start );
+
+      const Eigen::Vector3f mixedColor = (gradient[ first ].second * (1. - normalizedT)) + (gradient[ first + 1 ].second * normalizedT);
+      return mixedColor;
+    };
+
+    auto& neurons = std::get< 0 >( _unselectedNeurons );
+
+    auto colors = std::vector< Eigen::Vector3f >(neurons.size(), _unselectedColor);
+    if(timestamp < 0
+#ifdef NEUROTESSMESH_USE_SIMIL
+        || !_simulationPlayer
+#endif
+        ) return colors;
+
+    uint32_t index = 0;
+    for ( const auto& mesh: neurons )
+    {
+      auto it = _activationTimestamps.find( mesh );
+      if ( it == _activationTimestamps.end( ))
+      {
+        colors[ index ] = calculateGradientColor( _gradient , INFINITY);
+      }
+      else
+      {
+        colors[ index ] = calculateGradientColor( _gradient ,
+                                                 ( timestamp - it->second ) / _delay );
+      }
+      ++index;
+    }
+    return colors;
   }
 }

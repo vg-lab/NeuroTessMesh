@@ -10,8 +10,11 @@
 
 
 #include "MainWindow.h"
+#include "LoaderThread.h"
 #include <neurotessmesh/version.h>
 #include <nsol/nsol.h>
+#include <neurotessmesh/Scene.h>
+
 #ifdef NEUROLOTS_USE_GMRVZEQ
 #include <gmrvzeq/version.h>
 #endif
@@ -20,6 +23,10 @@
 #endif
 
 #include <acuterecorder/acuterecorder.h>
+#ifdef NEUROTESSMESH_USE_SIMIL
+  #include <qsimil/qsimil.h>
+  #include <simil/simil.h>
+#endif
 
 #include <QFileDialog>
 #include <QInputDialog>
@@ -33,21 +40,24 @@
 
 constexpr const char* POSITION_KEY = "positionData";
 
-MainWindow::MainWindow( QWidget* parent_, bool updateOnIdle_ )
+MainWindow::MainWindow( QWidget* parent_ , bool updateOnIdle_ )
   : QMainWindow( parent_ )
   , _lastOpenedFileName( "" )
   , _ui( new Ui::MainWindow )
   , _openGLWidget( nullptr )
+  , _scene( nullptr )
   , _recorder( nullptr )
+  , m_dataLoader{ nullptr }
 {
   _ui->setupUi( this );
 
-  auto recorderAction = RecorderUtils::recorderAction();
-  _ui->menuTools->insertAction(_ui->menuTools->actions().first(), recorderAction);
-  _ui->toolBar->addAction(recorderAction);
+  auto recorderAction = RecorderUtils::recorderAction( );
+  _ui->menuTools->insertAction( _ui->menuTools->actions( ).first( ) ,
+                                recorderAction );
+  _ui->toolBar->addAction( recorderAction );
 
-  connect(recorderAction, SIGNAL(triggered(bool)),
-          this,           SLOT(openRecorder()));
+  connect( recorderAction , SIGNAL( triggered( bool )) ,
+           this , SLOT( openRecorder( )));
 
   _ui->actionUpdateOnIdle->setChecked( updateOnIdle_ );
   _ui->actionShowFPSOnIdleUpdate->setChecked( false );
@@ -55,8 +65,7 @@ MainWindow::MainWindow( QWidget* parent_, bool updateOnIdle_ )
 #ifdef NSOL_USE_BRION
   _ui->actionOpenBlueConfig->setEnabled( true );
 #else
-  //_ui->actionOpenBlueConfig->setEnabled( false );
-  _ui->actionOpenBlueConfig->setVisible(false);
+  _ui->actionOpenBlueConfig->setEnabled( false );
 #endif
 
 #ifdef NSOL_USE_QT5CORE
@@ -65,34 +74,35 @@ MainWindow::MainWindow( QWidget* parent_, bool updateOnIdle_ )
   _ui->actionOpenXMLScene->setEnabled( false );
 #endif
 
-  connect( _ui->actionQuit, SIGNAL( triggered( )),
-           QApplication::instance(), SLOT( quit( )));
+  connect( _ui->actionQuit , SIGNAL( triggered( )) ,
+           QApplication::instance( ) , SLOT( quit( )));
 
-  connect( _ui->actionAbout, SIGNAL(triggered( )),
-           this, SLOT( showAbout( )));
+  connect( _ui->actionAbout , SIGNAL( triggered( )) ,
+           this , SLOT( showAbout( )));
+
+  _openGLWidget = new OpenGLWidget( );
+  this->setCentralWidget( _openGLWidget );
+  _openGLWidget->setMinimumSize( QSize( 100 , 100 ));
 
   _initExtractionDock( );
   _initConfigurationDock( );
   _initRenderOptionsDock( );
+  _initPlayerDock( );
 
-  _openGLWidget = new OpenGLWidget();
-  this->setCentralWidget( _openGLWidget );
-  _openGLWidget->setMinimumSize( QSize( 100, 100 ));
-
-  if( _openGLWidget->format( ).version( ).first < 4 )
+  if ( _openGLWidget->format( ).version( ).first < 4 )
   {
     std::cerr << "This application requires at least OpenGL 4.0" << std::endl;
     exit( -1 );
   }
 
-  auto positionsMenu = new QMenu();
-  positionsMenu->setTitle("Camera positions");
-  _ui->actionCamera_Positions->setMenu(positionsMenu);
+  auto positionsMenu = new QMenu( );
+  positionsMenu->setTitle( "Camera positions" );
+  _ui->actionCamera_Positions->setMenu( positionsMenu );
 }
 
-MainWindow::~MainWindow( void )
+MainWindow::~MainWindow( )
 {
-    delete _ui;
+  delete _ui;
 }
 
 void MainWindow::init( const std::string& zeqSession_ )
@@ -103,135 +113,126 @@ void MainWindow::init( const std::string& zeqSession_ )
   if ( !zeqSession_.empty( ))
     _openGLWidget->setZeqSession( zeqSession_ );
 
-  connect( _ui->actionHome, SIGNAL( triggered( )),
-           this, SLOT( home( )));
+  connect( _ui->actionHome , SIGNAL( triggered( )) ,
+           this , SLOT( home( )));
 
-  connect( _ui->actionUpdateOnIdle, SIGNAL( triggered( )),
-           _openGLWidget, SLOT( toggleUpdateOnIdle( )));
+  connect( _ui->actionUpdateOnIdle , SIGNAL( triggered( )) ,
+           _openGLWidget , SLOT( toggleUpdateOnIdle( )));
 
-  connect( _ui->actionShowFPSOnIdleUpdate, SIGNAL( triggered( )),
-           _openGLWidget, SLOT( toggleShowFPS( )));
+  connect( _ui->actionShowFPSOnIdleUpdate , SIGNAL( triggered( )) ,
+           _openGLWidget , SLOT( toggleShowFPS( )));
 
-  connect( _ui->actionWireframe, SIGNAL( triggered( )),
-           _openGLWidget, SLOT( toggleWireframe( )));
+  connect( _ui->actionWireframe , SIGNAL( triggered( )) ,
+           _openGLWidget , SLOT( toggleWireframe( )));
 
-  connect( _ui->actionOpenBlueConfig, SIGNAL( triggered( )),
-           this, SLOT( openBlueConfigThroughDialog( )));
+  connect( _ui->actionOpenBlueConfig , SIGNAL( triggered( )) ,
+           this , SLOT( openBlueConfigThroughDialog( )));
 
-  connect( _ui->actionOpenXMLScene, SIGNAL( triggered( )),
-           this, SLOT( openXMLSceneThroughDialog( )));
+  connect( _ui->actionOpenXMLScene , SIGNAL( triggered( )) ,
+           this , SLOT( openXMLSceneThroughDialog( )));
 
-  connect( _ui->actionOpenSWCFile, SIGNAL( triggered( )),
-           this, SLOT( openSWCFileThroughDialog( )));
+  connect( _ui->actionOpenSWCFile , SIGNAL( triggered( )) ,
+           this , SLOT( openSWCFileThroughDialog( )));
 
-  connect( _radiusSlider, SIGNAL( valueChanged( int )),
-           this, SLOT( onActionGenerate( int )));
+  connect( _radiusSlider , SIGNAL( valueChanged( int )) ,
+           this , SLOT( onActionGenerate( int )));
 
-  connect( _extractButton, SIGNAL( clicked( )),
-           _openGLWidget, SLOT( extractEditNeuronMesh( )));
+  connect( _extractButton , SIGNAL( clicked( )) ,
+           _openGLWidget , SLOT( extractEditNeuronMesh( )));
 
-  connect( _lotSlider, SIGNAL( valueChanged( int )),
-           _openGLWidget, SLOT( onLotValueChanged( int )));
+  connect( _lotSlider , SIGNAL( valueChanged( int )) ,
+           _openGLWidget , SLOT( onLotValueChanged( int )));
   _lotSlider->valueChanged( _lotSlider->value( ));
 
-  connect( _distanceSlider, SIGNAL( valueChanged( int )),
-           _openGLWidget, SLOT( onDistanceValueChanged( int )));
+  connect( _distanceSlider , SIGNAL( valueChanged( int )) ,
+           _openGLWidget , SLOT( onDistanceValueChanged( int )));
   _distanceSlider->valueChanged( _distanceSlider->value( ));
 
-  connect( _radioHomogeneous, SIGNAL( clicked( )),
-           _openGLWidget, SLOT( onHomogeneousClicked( )));
+  connect( _radioHomogeneous , SIGNAL( clicked( )) ,
+           _openGLWidget , SLOT( onHomogeneousClicked( )));
 
-  connect( _radioLinear, SIGNAL( clicked( )),
-           _openGLWidget, SLOT( onLinearClicked( )));
+  connect( _radioLinear , SIGNAL( clicked( )) ,
+           _openGLWidget , SLOT( onLinearClicked( )));
   _radioLinear->clicked( );
 
-  connect( _backGroundColor, SIGNAL( colorChanged( QColor )),
-           _openGLWidget, SLOT( changeClearColor( QColor )));
-  _backGroundColor->color( QColor( 255, 255, 255 ));
-
-  connect( _neuronColor, SIGNAL( colorChanged( QColor )),
-           _openGLWidget, SLOT( changeNeuronColor( QColor )));
-  _neuronColor->color( QColor( 0, 120, 250 ));
-
-  connect( _selectedNeuronColor, SIGNAL( colorChanged( QColor )),
-           _openGLWidget, SLOT( changeSelectedNeuronColor( QColor )));
-  _selectedNeuronColor->color( QColor( 250, 120, 0 ));
-
-  connect( _neuronRender, SIGNAL( currentIndexChanged( int )),
-           _openGLWidget, SLOT( changeNeuronPiece( int )));
+  connect( _neuronRender , SIGNAL( currentIndexChanged( int )) ,
+           _openGLWidget , SLOT( changeNeuronPiece( int )));
   _neuronRender->currentIndexChanged( 1 );
 
-  connect( _selectedNeuronRender, SIGNAL( currentIndexChanged( int )),
-           _openGLWidget, SLOT( changeSelectedNeuronPiece( int )));
+  connect( _selectedNeuronRender , SIGNAL( currentIndexChanged( int )) ,
+           _openGLWidget , SLOT( changeSelectedNeuronPiece( int )));
   _selectedNeuronRender->currentIndexChanged( 0 );
 
-  connect(_ui->actionLoad_camera_positions, SIGNAL(triggered(bool)), this,
-            SLOT(loadCameraPositions()));
+  connect( _ui->actionLoad_camera_positions , SIGNAL( triggered( bool )) ,
+           this ,
+           SLOT( loadCameraPositions( )));
 
-  connect(_ui->actionSave_camera_positions, SIGNAL(triggered(bool)), this,
-            SLOT(saveCameraPositions()));
+  connect( _ui->actionSave_camera_positions , SIGNAL( triggered( bool )) ,
+           this ,
+           SLOT( saveCameraPositions( )));
 
-  connect(_ui->actionAdd_camera_position, SIGNAL(triggered(bool)), this,
-            SLOT(addCameraPosition()));
+  connect( _ui->actionAdd_camera_position , SIGNAL( triggered( bool )) , this ,
+           SLOT( addCameraPosition( )));
 
-  connect(_ui->actionRemove_camera_position, SIGNAL(triggered(bool)), this,
-            SLOT(removeCameraPosition()));
+  connect( _ui->actionRemove_camera_position , SIGNAL( triggered( bool )) ,
+           this ,
+           SLOT( removeCameraPosition( )));
+
+  connect( _backGroundColor , SIGNAL( colorChanged( QColor )) ,
+           _openGLWidget , SLOT( changeClearColor( QColor )));
+
+  connect( _neuronColor , SIGNAL( colorChanged( QColor )) ,
+           _openGLWidget , SLOT( changeNeuronColor( QColor )));
+
+  connect( _selectedNeuronColor , SIGNAL( colorChanged( QColor )) ,
+           _openGLWidget , SLOT( changeSelectedNeuronColor( QColor )));
 }
 
-void MainWindow::showStatusBarMessage ( const QString& message )
+void MainWindow::showStatusBarMessage( const QString& message )
 {
   _ui->statusbar->showMessage( message );
 }
 
-void MainWindow::openBlueConfig( const std::string& fileName,
+void MainWindow::openBlueConfig( const std::string& fileName ,
                                  const std::string& targetLabel )
 {
-  _openGLWidget->loadData( fileName,
-                           neurotessmesh::Scene::TDataFileType::BlueConfig,
-                           targetLabel );
-  updateNeuronList( );
-  _openGLWidget->changeNeuronPiece(_neuronRender->currentIndex());
-  _openGLWidget->changeSelectedNeuronPiece(_selectedNeuronRender->currentIndex());
+  loadData( fileName , targetLabel ,
+            neurotessmesh::LoaderThread::DataFileType::BlueConfig );
 }
 
 void MainWindow::openXMLScene( const std::string& fileName )
 {
-  _openGLWidget->loadData( fileName,
-                           neurotessmesh::Scene::TDataFileType::NsolScene );
-  updateNeuronList( );
-  _openGLWidget->changeNeuronPiece(_neuronRender->currentIndex());
-  _openGLWidget->changeSelectedNeuronPiece(_selectedNeuronRender->currentIndex());
+  loadData( fileName , std::string( ) ,
+            neurotessmesh::LoaderThread::DataFileType::NsolScene );
 }
 
 void MainWindow::openSWCFile( const std::string& fileName )
 {
-  _openGLWidget->loadData( fileName,
-                           neurotessmesh::Scene::TDataFileType::SWC );
-  updateNeuronList( );
-  _openGLWidget->changeNeuronPiece(_neuronRender->currentIndex());
-  _openGLWidget->changeSelectedNeuronPiece(_selectedNeuronRender->currentIndex());
+  loadData( fileName , std::string( ) ,
+            neurotessmesh::LoaderThread::DataFileType::SWC );
 }
 
-void MainWindow::updateNeuronList( void )
+void MainWindow::updateNeuronList( )
 {
   _neuronList->clear( );
-  const std::vector< unsigned int >& ids = _openGLWidget->neuronIdList( );
+  const std::vector< unsigned int >& ids = _scene->neuronIndices( );
 
-  for( const auto& id: ids )
+  for ( const auto& id: ids )
   {
     _neuronList->addItem( QString::number( id ));
   }
 }
 
-void MainWindow::home( void )
+void MainWindow::home( )
 {
+  _scene->home( );
   _openGLWidget->home( );
   _generateNeuritesLayout( );
   _extractButton->setEnabled( false );
   _somaGroup->hide( );
 }
 
-void MainWindow::openBlueConfigThroughDialog( void )
+void MainWindow::openBlueConfigThroughDialog( )
 {
 #ifdef NSOL_USE_BRION
 
@@ -258,12 +259,12 @@ void MainWindow::openBlueConfigThroughDialog( void )
 #endif
 }
 
-void MainWindow::openXMLSceneThroughDialog( void )
+void MainWindow::openXMLSceneThroughDialog( )
 {
 #ifdef NSOL_USE_QT5CORE
   QString path = QFileDialog::getOpenFileName(
-    this, tr( "Open XML Scene" ), _lastOpenedFileName,
-    tr( "XML ( *.xml);; All files (*)" ), nullptr,
+    this , tr( "Open XML Scene" ) , _lastOpenedFileName ,
+    tr( "XML ( *.xml);; All files (*)" ) , nullptr ,
     QFileDialog::DontUseNativeDialog );
 
   if ( path != QString( "" ))
@@ -275,11 +276,11 @@ void MainWindow::openXMLSceneThroughDialog( void )
 
 }
 
-void MainWindow::openSWCFileThroughDialog( void )
+void MainWindow::openSWCFileThroughDialog( )
 {
   QString path = QFileDialog::getOpenFileName(
-    this, tr( "Open Swc File" ), _lastOpenedFileName,
-    tr( "swc ( *.swc);; All files (*)" ), nullptr,
+    this , tr( "Open Swc File" ) , _lastOpenedFileName ,
+    tr( "swc ( *.swc);; All files (*)" ) , nullptr ,
     QFileDialog::DontUseNativeDialog );
 
   if ( path != QString( "" ))
@@ -289,11 +290,11 @@ void MainWindow::openSWCFileThroughDialog( void )
   }
 }
 
-void MainWindow::showAbout( void )
+void MainWindow::showAbout( )
 {
 
   QMessageBox::about(
-    this, tr( "About " ) + tr( "NeuroTessMesh" ),
+    this , tr( "About " ) + tr( "NeuroTessMesh" ) ,
     tr( "<p><BIG><b>" ) + tr( "NeuroTessMesh" ) + tr( "</b></BIG><br><br>" ) +
     tr( "version " ) +
     tr( neurotessmesh::Version::getString( ).c_str( )) +
@@ -301,73 +302,73 @@ void MainWindow::showAbout( void )
     tr( std::to_string( neurotessmesh::Version::getRevision( )).c_str( )) +
     tr( ")" ) +
     tr( "<br><br>Using: " ) +
-    tr( "<ul>") +
+    tr( "<ul>" ) +
     tr( "<li>nsol " ) +
     tr( nsol::Version::getString( ).c_str( )) +
     tr( " (" ) +
     tr( std::to_string( nsol::Version::getRevision( )).c_str( )) +
     tr( ")</li> " ) +
-#ifdef NSOL_USE_BRION
+    #ifdef NSOL_USE_BRION
     tr( "<li>Brion " ) +
     tr( brion::Version::getString( ).c_str( )) +
     tr( " (" ) +
     tr( std::to_string( brion::Version::getRevision( )).c_str( )) +
     tr( ")" ) +
     tr ( "</li> " ) +
-#endif
-#ifdef NEUROLOTS_USE_ZEROEQ
+    #endif
+    #ifdef NEUROLOTS_USE_ZEROEQ
     tr( "<li>ZEQ " ) +
     tr( zeroeq::Version::getString( ).c_str( )) +
     tr( " (" ) +
     tr( std::to_string( zeroeq::Version::getRevision( )).c_str( )) +
     tr( ")" ) +
     tr ( "</li> " ) +
-#endif
-#ifdef NEUROLOTS_USE_GMRVLEX
+    #endif
+    #ifdef NEUROLOTS_USE_GMRVLEX
     tr( "<li>gmrvzeq " ) +
     tr( gmrvlex::Version::getString( ).c_str( )) +
     tr( " (" ) +
     tr( std::to_string( gmrvlex::Version::getRevision( )).c_str( )) +
     tr( ")" ) +
     tr ( "</li> " ) +
-#endif
-#ifdef NEUROLOTS_USE_DEFLECT
+    #endif
+    #ifdef NEUROLOTS_USE_DEFLECT
     tr( "<li>Deflect " ) +
     tr( deflect::Version::getString( ).c_str( )) +
     tr( " (" ) +
     tr( std::to_string( deflect::Version::getRevision( )).c_str( )) +
     tr( ")" ) +
     tr ( "</li> " ) +
-#endif
+    #endif
     tr( "<li>AcuteRecorder " ) +
-    tr( acuterecorder::Version::getString().c_str( )) +
+    tr( acuterecorder::Version::getString( ).c_str( )) +
     tr( " (" ) +
     tr( std::to_string( acuterecorder::Version::getRevision( )).c_str( )) +
     tr( ")" ) +
-    tr ( "</li> " ) +
+    tr( "</li> " ) +
 
-    tr ( "</ul>" ) +
+    tr( "</ul>" ) +
     tr( "<br>VG-Lab - Universidad Rey Juan Carlos<br>"
-       "<a href=www.vg-lab.es>www.vg-lab.es</a><br>"
-       "<a href='mailto:dev@vg-lab.es'>dev@vg-lab.es</a><br><br>"
-       "<br>(C) 2015-2022. Universidad Rey Juan Carlos<br><br>"
-       "<img src=':/icons/rsc/logoVGLab.png' >&nbsp;&nbsp;&nbsp;&nbsp;"
-       "<img src=':/icons/rsc/logoURJC.png' ><br><br> "
-       "</p>"
-       "")
-    );
+        "<a href=www.vg-lab.es>www.vg-lab.es</a><br>"
+        "<a href='mailto:dev@vg-lab.es'>dev@vg-lab.es</a><br><br>"
+        "<br>(C) 2015-2022. Universidad Rey Juan Carlos<br><br>"
+        "<img src=':/icons/rsc/logoVGLab.png' >&nbsp;&nbsp;&nbsp;&nbsp;"
+        "<img src=':/icons/rsc/logoURJC.png' ><br><br> "
+        "</p>"
+        "" )
+  );
 }
 
-void MainWindow::openRecorder()
+void MainWindow::openRecorder( )
 {
-  auto action = qobject_cast<QAction *>(sender());
+  auto action = qobject_cast< QAction* >( sender( ));
 
   // The button stops the recorder if found.
-  if( _recorder )
+  if ( _recorder )
   {
-    if(action) action->setDisabled( true );
+    if ( action ) action->setDisabled( true );
 
-    RecorderUtils::stopAndWait(_recorder, this);
+    RecorderUtils::stopAndWait( _recorder , this );
 
     // Recorder will be deleted after finishing.
     _recorder = nullptr;
@@ -379,7 +380,7 @@ void MainWindow::openRecorder()
   params.widgetsToRecord.emplace_back( "Main Widget" , this );
   params.includeScreens = false;
 
-  if(!_ui->actionAdvancedRecorderOptions->isChecked())
+  if ( !_ui->actionAdvancedRecorderOptions->isChecked( ))
   {
     params.showWorker = false;
     params.showWidgetSourceMode = false;
@@ -389,23 +390,24 @@ void MainWindow::openRecorder()
   RecorderDialog dialog( nullptr , params , true );
   dialog.setWindowIcon( QIcon( ":/icons/rsc/neurotessmesh.png" ));
   dialog.setFixedSize( 800 , 600 );
-  if ( dialog.exec( ) == QDialog::Accepted)
+  if ( dialog.exec( ) == QDialog::Accepted )
   {
     _recorder = dialog.getRecorder( );
     connect( _recorder , SIGNAL( finished( )) ,
              _recorder , SLOT( deleteLater( )));
     connect( _recorder , SIGNAL( finished( )) ,
              this , SLOT( finishRecording( )));
-    if(action) action->setChecked( true );
-  } else
+    if ( action ) action->setChecked( true );
+  }
+  else
   {
-    if(action) action->setChecked( false );
+    if ( action ) action->setChecked( false );
   }
 }
 
 void MainWindow::updateExtractMeshDock( void )
 {
-  if( _ui->actionEditSave->isChecked( ))
+  if ( _ui->actionEditSave->isChecked( ))
     _extractMeshDock->show( );
   else
     _extractMeshDock->close( );
@@ -413,7 +415,7 @@ void MainWindow::updateExtractMeshDock( void )
 
 void MainWindow::updateConfigurationDock( void )
 {
-  if( _ui->actionConfiguration->isChecked( ))
+  if ( _ui->actionConfiguration->isChecked( ))
     _configurationDock->show( );
   else
     _configurationDock->close( );
@@ -421,384 +423,434 @@ void MainWindow::updateConfigurationDock( void )
 
 void MainWindow::updateRenderOptionsDock( void )
 {
-  if( _ui->actionRenderOptions->isChecked( ))
+  if ( _ui->actionRenderOptions->isChecked( ))
     _renderOptionsDock->show( );
   else
     _renderOptionsDock->close( );
 }
 
+void MainWindow::updatePlayerOptionsDock( )
+{
+#ifdef NEUROTESSMESH_USE_SIMIL
+  auto playerWidget = qobject_cast< qsimil::QSimControlWidget* >(
+    _playerDock->widget( ));
+  bool enabled = false;
+  if ( playerWidget )
+  {
+    auto player = dynamic_cast<simil::SpikesPlayer*>(playerWidget->getSimulationPlayer( ));
+    enabled = player && !player->spikes( ).empty( );
+  }
+
+  _playerDock->setEnabled( enabled );
+  if ( _ui->actionSimulation_player_options->isChecked( ))
+    _playerDock->show( );
+  else
+    _playerDock->hide( );
+#else
+  _ui->actionSimulation_player_options->setEnabled(false);
+  _playerDock->setVisible(false);
+#endif
+}
 
 void MainWindow::onListClicked( QListWidgetItem* item )
 {
   int id = item->text( ).toInt( );
-  _openGLWidget->neuronToEdit( id );
+  _scene->setNeuronToEdit( id );
+  _openGLWidget->update( );
   _generateNeuritesLayout( );
   _extractButton->setEnabled( true );
   _somaGroup->show( );
-
 }
 
 void MainWindow::onActionGenerate( int /*value_*/ )
 {
-  float alphaRadius = ( float )_radiusSlider->value( ) / 100.0f;
+  float alphaRadius = static_cast<float>(_radiusSlider->value( )) / 100.0f;
   std::vector< float > alphaNeurites;
 
-  for ( unsigned int i = 0; i < _neuriteSliders.size( ); i++ )
+  for ( auto& _neuriteSlider: _neuriteSliders )
   {
-    alphaNeurites.push_back(( float ) _neuriteSliders[i]->value( ) / 100.0f );
+    alphaNeurites.push_back(
+      static_cast<float>(_neuriteSlider->value( )) / 100.0f );
   }
 
-  _openGLWidget->regenerateNeuronToEdit( alphaRadius, alphaNeurites );
+
+  _openGLWidget->makeCurrent( );
+  _openGLWidget->update( );
+  _scene->regenerateEditNeuronMesh( alphaRadius , alphaNeurites );
 }
 
 void MainWindow::finishRecording( )
 {
-  auto actionRecorder = _ui->menuTools->actions().first();
-  if(actionRecorder)
+  auto actionRecorder = _ui->menuTools->actions( ).first( );
+  if ( actionRecorder )
   {
     actionRecorder->setEnabled( true );
     actionRecorder->setChecked( false );
   }
 }
 
-void MainWindow::loadCameraPositions()
+void MainWindow::loadCameraPositions( )
 {
   const QString title = "Load camera positions";
 
-  auto actions = _ui->actionCamera_Positions->menu()->actions();
-  const auto numActions = actions.size();
-  if(numActions > 0)
+  auto actions = _ui->actionCamera_Positions->menu( )->actions( );
+  const auto numActions = actions.size( );
+  if ( numActions > 0 )
   {
-    const auto warnText = tr("Loading new camera positions will remove"
-                              " %1 existing position%2. Are you sure?").arg(numActions).arg(numActions > 1 ? "s":"");
-    if(QMessageBox::Ok != QMessageBox::warning(this, title, warnText, QMessageBox::Cancel|QMessageBox::Ok))
+    const auto warnText = tr( "Loading new camera positions will remove"
+                              " %1 existing position%2. Are you sure?" ).arg(
+      numActions ).arg(
+      numActions > 1 ? "s" : "" );
+    if ( QMessageBox::Ok != QMessageBox::warning( this , title , warnText ,
+                                                  QMessageBox::Cancel |
+                                                  QMessageBox::Ok ))
       return;
   }
 
   const QString nameFilter = "Camera positions (*.json)";
   QDir directory;
 
-  if(_lastOpenedFileName.isEmpty())
-    directory = QDir::home();
+  if ( _lastOpenedFileName.isEmpty( ))
+    directory = QDir::home( );
   else
-    directory = QFileInfo(_lastOpenedFileName).dir();
+    directory = QFileInfo( _lastOpenedFileName ).dir( );
 
-  QFileDialog fDialog(this);
-  fDialog.setWindowIcon(QIcon(":/icons/rsc/neurotessmesh.png"));
-  fDialog.setWindowTitle(title);
-  fDialog.setAcceptMode(QFileDialog::AcceptMode::AcceptOpen);
-  fDialog.setDefaultSuffix("json");
-  fDialog.setDirectory(directory);
-  fDialog.setOption(QFileDialog::Option::DontUseNativeDialog, true);
-  fDialog.setFileMode(QFileDialog::FileMode::ExistingFile);
-  fDialog.setNameFilters(QStringList{nameFilter});
-  fDialog.setNameFilter(nameFilter);
+  QFileDialog fDialog( this );
+  fDialog.setWindowIcon( QIcon( ":/icons/rsc/neurotessmesh.png" ));
+  fDialog.setWindowTitle( title );
+  fDialog.setAcceptMode( QFileDialog::AcceptMode::AcceptOpen );
+  fDialog.setDefaultSuffix( "json" );
+  fDialog.setDirectory( directory );
+  fDialog.setOption( QFileDialog::Option::DontUseNativeDialog , true );
+  fDialog.setFileMode( QFileDialog::FileMode::ExistingFile );
+  fDialog.setNameFilters( QStringList{ nameFilter } );
+  fDialog.setNameFilter( nameFilter );
 
-  if(fDialog.exec() != QFileDialog::Accepted)
+  if ( fDialog.exec( ) != QFileDialog::Accepted )
     return;
 
-  if(fDialog.selectedFiles().empty()) return;
+  if ( fDialog.selectedFiles( ).empty( )) return;
 
-  auto file = fDialog.selectedFiles().first();
+  auto file = fDialog.selectedFiles( ).first( );
 
-  QFile posFile{file};
-  if(!posFile.open(QIODevice::ReadOnly|QIODevice::Text))
+  QFile posFile{ file };
+  if ( !posFile.open( QIODevice::ReadOnly | QIODevice::Text ))
   {
-    const QString errorText = tr("Unable to open: %1").arg(file);
-    QMessageBox::critical(this, title, errorText);
+    const QString errorText = tr( "Unable to open: %1" ).arg( file );
+    QMessageBox::critical( this , title , errorText );
     return;
   }
 
-  const auto contents = posFile.readAll();
+  const auto contents = posFile.readAll( );
   QJsonParseError parserError;
 
-  const auto  jsonDoc = QJsonDocument::fromJson(contents, &parserError);
-  if(jsonDoc.isNull() || !jsonDoc.isObject())
+  const auto jsonDoc = QJsonDocument::fromJson( contents , &parserError );
+  if ( jsonDoc.isNull( ) || !jsonDoc.isObject( ))
   {
-    const auto message = tr("Couldn't read the contents of %1 or parsing error.").arg(file);
+    const auto message = tr(
+      "Couldn't read the contents of %1 or parsing error." ).arg( file );
 
-    QMessageBox msgbox{this};
-    msgbox.setWindowTitle(title);
-    msgbox.setIcon(QMessageBox::Icon::Critical);
-    msgbox.setText(message);
-    msgbox.setWindowIcon(QIcon(":/icons/rsc/neurotessmesh.png"));
-    msgbox.setStandardButtons(QMessageBox::Ok);
-    msgbox.setDetailedText(parserError.errorString());
-    msgbox.exec();
+    QMessageBox msgbox{ this };
+    msgbox.setWindowTitle( title );
+    msgbox.setIcon( QMessageBox::Icon::Critical );
+    msgbox.setText( message );
+    msgbox.setWindowIcon( QIcon( ":/icons/rsc/neurotessmesh.png" ));
+    msgbox.setStandardButtons( QMessageBox::Ok );
+    msgbox.setDetailedText( parserError.errorString( ));
+    msgbox.exec( );
     return;
   }
 
-  const auto jsonObj = jsonDoc.object();
-  if(jsonObj.isEmpty())
+  const auto jsonObj = jsonDoc.object( );
+  if ( jsonObj.isEmpty( ))
   {
-    const auto message = tr("Error parsing the contents of %1.").arg(file);
+    const auto message = tr( "Error parsing the contents of %1." ).arg( file );
 
-    QMessageBox msgbox{this};
-    msgbox.setWindowTitle(title);
-    msgbox.setIcon(QMessageBox::Icon::Critical);
-    msgbox.setText(message);
-    msgbox.setWindowIcon(QIcon(":/icons/rsc/neurotessmesh.png"));
-    msgbox.setStandardButtons(QMessageBox::Ok);
-    msgbox.exec();
+    QMessageBox msgbox{ this };
+    msgbox.setWindowTitle( title );
+    msgbox.setIcon( QMessageBox::Icon::Critical );
+    msgbox.setText( message );
+    msgbox.setWindowIcon( QIcon( ":/icons/rsc/neurotessmesh.png" ));
+    msgbox.setStandardButtons( QMessageBox::Ok );
+    msgbox.exec( );
     return;
   }
 
-  const QFileInfo currentFile{_lastOpenedFileName};
-  const QString jsonPositionsFile = jsonObj.value("filename").toString();
-  if(!jsonPositionsFile.isEmpty() && jsonPositionsFile.compare(currentFile.fileName(), Qt::CaseInsensitive) != 0)
+  const QFileInfo currentFile{ _lastOpenedFileName };
+  const QString jsonPositionsFile = jsonObj.value( "filename" ).toString( );
+  if ( !jsonPositionsFile.isEmpty( ) &&
+       jsonPositionsFile.compare( currentFile.fileName( ) ,
+                                  Qt::CaseInsensitive ) != 0 )
   {
-    const auto message = tr("This positions are from file '%1'. Current file"
-                            " is '%2'. Do you want to continue?").arg(jsonPositionsFile).arg(currentFile.fileName());
+    const auto message = tr( "This positions are from file '%1'. Current file"
+                             " is '%2'. Do you want to continue?" )
+      .arg( jsonPositionsFile )
+      .arg( currentFile.fileName( ));
 
-    QMessageBox msgbox{this};
-    msgbox.setWindowTitle(title);
-    msgbox.setIcon(QMessageBox::Icon::Question);
-    msgbox.setText(message);
-    msgbox.setWindowIcon(QIcon(":/icons/rsc/neurotessmesh.png"));
-    msgbox.setStandardButtons(QMessageBox::Cancel|QMessageBox::Ok);
-    msgbox.setDefaultButton(QMessageBox::Ok);
+    QMessageBox msgbox{ this };
+    msgbox.setWindowTitle( title );
+    msgbox.setIcon( QMessageBox::Icon::Question );
+    msgbox.setText( message );
+    msgbox.setWindowIcon( QIcon( ":/icons/rsc/neurotessmesh.png" ));
+    msgbox.setStandardButtons( QMessageBox::Cancel | QMessageBox::Ok );
+    msgbox.setDefaultButton( QMessageBox::Ok );
 
-    if(QMessageBox::Ok != msgbox.exec())
+    if ( QMessageBox::Ok != msgbox.exec( ))
       return;
   }
 
   // Clear existing actions before entering new ones.
-  for(auto action: actions)
+  for ( auto action: actions )
   {
-    _ui->actionCamera_Positions->menu()->removeAction(action);
+    _ui->actionCamera_Positions->menu( )->removeAction( action );
     delete action;
   }
 
-  const auto jsonPositions = jsonObj.value("positions").toArray();
+  const auto jsonPositions = jsonObj.value( "positions" ).toArray( );
 
-  auto createPosition = [this](const QJsonValue &v)
+  auto createPosition = [ this ]( const QJsonValue& v )
   {
-    const auto o = v.toObject();
+    const auto o = v.toObject( );
 
-    const auto name = o.value("name").toString();
-    const auto position = o.value("position").toString();
-    const auto radius = o.value("radius").toString();
-    const auto rotation = o.value("rotation").toString();
+    const auto name = o.value( "name" ).toString( );
+    const auto position = o.value( "position" ).toString( );
+    const auto radius = o.value( "radius" ).toString( );
+    const auto rotation = o.value( "rotation" ).toString( );
 
-    auto action = new QAction(name);
-    action->setProperty(POSITION_KEY, position + ";" + radius + ";" + rotation);
+    auto action = new QAction( name );
+    action->setProperty( POSITION_KEY ,
+                         position + ";" + radius + ";" + rotation );
 
-    connect(action, SIGNAL(triggered(bool)), this, SLOT(applyCameraPosition()));
+    connect( action , SIGNAL( triggered( bool )) ,
+             this , SLOT( applyCameraPosition( )));
 
-    _ui->actionCamera_Positions->menu()->addAction(action);
+    _ui->actionCamera_Positions->menu( )->addAction( action );
   };
-  std::for_each(jsonPositions.constBegin(), jsonPositions.constEnd(), createPosition);
+  std::for_each( jsonPositions.constBegin( ) , jsonPositions.constEnd( ) ,
+                 createPosition );
 
-  const bool positionsExist = !_ui->actionCamera_Positions->menu()->actions().isEmpty();
-  _ui->actionSave_camera_positions->setEnabled(positionsExist);
-  _ui->actionRemove_camera_position->setEnabled(positionsExist);
-  _ui->actionCamera_Positions->setEnabled(positionsExist);
+  const bool positionsExist = !_ui->actionCamera_Positions->menu( )->actions( ).isEmpty( );
+  _ui->actionSave_camera_positions->setEnabled( positionsExist );
+  _ui->actionRemove_camera_position->setEnabled( positionsExist );
+  _ui->actionCamera_Positions->setEnabled( positionsExist );
 }
 
-void MainWindow::saveCameraPositions()
+void MainWindow::saveCameraPositions( )
 {
   const QString nameFilter = "Camera positions (*.json)";
   QDir directory;
   QString filename;
 
-  if(_lastOpenedFileName.isEmpty())
+  if ( _lastOpenedFileName.isEmpty( ))
   {
-    directory = QDir::home();
+    directory = QDir::home( );
     filename = "positions.json";
   }
   else
   {
-    QFileInfo fi(_lastOpenedFileName);
-    directory = fi.dir();
-    filename = QString("%1_positions.json").arg(fi.baseName());
+    QFileInfo fi( _lastOpenedFileName );
+    directory = fi.dir( );
+    filename = QString( "%1_positions.json" ).arg( fi.baseName( ));
   }
 
-  QFileDialog fDialog(this);
-  fDialog.setWindowIcon(QIcon(":/icons/rsc/neurotessmesh.png"));
-  fDialog.setWindowTitle("Save camera positions");
-  fDialog.setAcceptMode(QFileDialog::AcceptMode::AcceptSave);
-  fDialog.setDefaultSuffix("json");
-  fDialog.selectFile(filename);
-  fDialog.setDirectory(directory);
-  fDialog.setOption(QFileDialog::Option::DontUseNativeDialog, true);
-  fDialog.setOption(QFileDialog::Option::DontConfirmOverwrite, false);
-  fDialog.setFileMode(QFileDialog::FileMode::AnyFile);
-  fDialog.setNameFilters(QStringList{nameFilter});
-  fDialog.setNameFilter(nameFilter);
+  QFileDialog fDialog( this );
+  fDialog.setWindowIcon( QIcon( ":/icons/rsc/neurotessmesh.png" ));
+  fDialog.setWindowTitle( "Save camera positions" );
+  fDialog.setAcceptMode( QFileDialog::AcceptMode::AcceptSave );
+  fDialog.setDefaultSuffix( "json" );
+  fDialog.selectFile( filename );
+  fDialog.setDirectory( directory );
+  fDialog.setOption( QFileDialog::Option::DontUseNativeDialog , true );
+  fDialog.setOption( QFileDialog::Option::DontConfirmOverwrite , false );
+  fDialog.setFileMode( QFileDialog::FileMode::AnyFile );
+  fDialog.setNameFilters( QStringList{ nameFilter } );
+  fDialog.setNameFilter( nameFilter );
 
-  if(fDialog.exec() != QFileDialog::Accepted)
+  if ( fDialog.exec( ) != QFileDialog::Accepted )
     return;
 
-  if(fDialog.selectedFiles().empty()) return;
+  if ( fDialog.selectedFiles( ).empty( )) return;
 
-  filename = fDialog.selectedFiles().first();
+  filename = fDialog.selectedFiles( ).first( );
 
-  QFile wFile{filename};
-  if(!wFile.open(QIODevice::WriteOnly|QIODevice::Text|QIODevice::Truncate))
+  QFile wFile{ filename };
+  if ( !wFile.open(
+    QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate ))
   {
-    const auto message = tr("Unable to open file %1 for writing.").arg(filename);
+    const auto message = tr( "Unable to open file %1 for writing." ).arg(
+      filename );
 
-    QMessageBox msgbox{this};
-    msgbox.setWindowTitle(tr("Save camera positions"));
-    msgbox.setIcon(QMessageBox::Icon::Critical);
-    msgbox.setText(message);
-    msgbox.setWindowIcon(QIcon(":/icons/rsc/neurotessmesh.png"));
-    msgbox.setDefaultButton(QMessageBox::Ok);
-    msgbox.exec();
+    QMessageBox msgbox{ this };
+    msgbox.setWindowTitle( tr( "Save camera positions" ));
+    msgbox.setIcon( QMessageBox::Icon::Critical );
+    msgbox.setText( message );
+    msgbox.setWindowIcon( QIcon( ":/icons/rsc/neurotessmesh.png" ));
+    msgbox.setDefaultButton( QMessageBox::Ok );
+    msgbox.exec( );
     return;
   }
 
-  QApplication::setOverrideCursor(Qt::WaitCursor);
+  QApplication::setOverrideCursor( Qt::WaitCursor );
 
-  const auto actions = _ui->actionCamera_Positions->menu()->actions();
+  const auto actions = _ui->actionCamera_Positions->menu( )->actions( );
 
   QJsonArray positionsObjs;
 
-  auto insertPosition = [&positionsObjs, this](const QAction *a)
+  auto insertPosition = [ &positionsObjs ]( const QAction* a )
   {
-    if(!a) return;
-    const auto posData = a->property(POSITION_KEY).toString();
-    const auto parts = posData.split(";");
-    Q_ASSERT(parts.size() == 3);
-    const auto position = parts.first();
-    const auto radius = parts.at(1);
-    const auto rotation = parts.last();
+    if ( !a ) return;
+    const auto posData = a->property( POSITION_KEY ).toString( );
+    const auto parts = posData.split( ";" );
+    Q_ASSERT( parts.size( ) == 3 );
+    const auto& position = parts.first( );
+    const auto& radius = parts.at( 1 );
+    const auto& rotation = parts.last( );
 
     QJsonObject positionObj;
-    positionObj.insert("name", a->text());
-    positionObj.insert("position", position);
-    positionObj.insert("radius", radius);
-    positionObj.insert("rotation", rotation);
+    positionObj.insert( "name" , a->text( ));
+    positionObj.insert( "position" , position );
+    positionObj.insert( "radius" , radius );
+    positionObj.insert( "rotation" , rotation );
 
     positionsObjs << positionObj;
   };
-  std::for_each(actions.cbegin(), actions.cend(), insertPosition);
+  std::for_each( actions.cbegin( ) , actions.cend( ) , insertPosition );
 
   QJsonObject obj;
-  obj.insert("filename", QFileInfo{_lastOpenedFileName}.fileName());
-  obj.insert("positions", positionsObjs);
+  obj.insert( "filename" , QFileInfo{ _lastOpenedFileName }.fileName( ));
+  obj.insert( "positions" , positionsObjs );
 
-  QJsonDocument doc{obj};
-  wFile.write(doc.toJson());
+  QJsonDocument doc{ obj };
+  wFile.write( doc.toJson( ));
 
-  QApplication::restoreOverrideCursor();
+  QApplication::restoreOverrideCursor( );
 
-  if(wFile.error() != QFile::NoError)
+  if ( wFile.error( ) != QFile::NoError )
   {
-    const auto message = tr("Error saving file %1.").arg(filename);
+    const auto message = tr( "Error saving file %1." ).arg( filename );
 
-    QMessageBox msgbox{this};
-    msgbox.setWindowTitle(tr("Save camera positions"));
-    msgbox.setIcon(QMessageBox::Icon::Critical);
-    msgbox.setText(message);
-    msgbox.setDetailedText(wFile.errorString());
-    msgbox.setWindowIcon(QIcon(":/icons/rsc/neurotessmesh.png"));
-    msgbox.setDefaultButton(QMessageBox::Ok);
-    msgbox.exec();
+    QMessageBox msgbox{ this };
+    msgbox.setWindowTitle( tr( "Save camera positions" ));
+    msgbox.setIcon( QMessageBox::Icon::Critical );
+    msgbox.setText( message );
+    msgbox.setDetailedText( wFile.errorString( ));
+    msgbox.setWindowIcon( QIcon( ":/icons/rsc/neurotessmesh.png" ));
+    msgbox.setDefaultButton( QMessageBox::Ok );
+    msgbox.exec( );
   }
 
-  wFile.flush();
-  wFile.close();
+  wFile.flush( );
+  wFile.close( );
 }
 
-void MainWindow::addCameraPosition()
+void MainWindow::addCameraPosition( )
 {
   QStringList items;
 
-  auto actions = _ui->actionCamera_Positions->menu()->actions();
-  auto insertItemName = [&items](const QAction *a){ items << a->text(); };
-  std::for_each(actions.cbegin(), actions.cend(), insertItemName);
+  auto actions = _ui->actionCamera_Positions->menu( )->actions( );
+  auto insertItemName = [ &items ]( const QAction* a )
+  { items << a->text( ); };
+  std::for_each( actions.cbegin( ) , actions.cend( ) , insertItemName );
 
-  const QString title = tr("Add camera position");
+  const QString title = tr( "Add camera position" );
 
   bool ok = false;
   QString name;
-  while(!ok || name.isEmpty())
+  while ( !ok || name.isEmpty( ))
   {
-    name = QInputDialog::getText(this, title, tr("Position name:"), QLineEdit::Normal, tr("New position"), &ok);
+    name = QInputDialog::getText( this , title , tr( "Position name:" ) ,
+                                  QLineEdit::Normal , tr( "New position" ) ,
+                                  &ok );
 
-    if(ok && !name.isEmpty())
+    if ( ok && !name.isEmpty( ))
     {
-      QString tempName(name);
+      QString tempName( name );
       int collision = 0;
-      while(items.contains(tempName, Qt::CaseInsensitive))
+      while ( items.contains( tempName , Qt::CaseInsensitive ))
       {
         ++collision;
-        tempName = tr("%1 (%2)").arg(name).arg(collision);
+        tempName = tr( "%1 (%2)" ).arg( name ).arg( collision );
       }
 
       name = tempName;
     }
   }
 
-  auto action = new QAction(name);
+  auto action = new QAction( name );
 
-  const auto position = _openGLWidget->cameraPosition();
-  action->setProperty(POSITION_KEY, position.toString());
+  const auto position = _openGLWidget->cameraPosition( );
+  action->setProperty( POSITION_KEY , position.toString( ));
 
-  connect(action, SIGNAL(triggered(bool)), this, SLOT(applyCameraPosition()));
-  _ui->actionCamera_Positions->menu()->addAction(action);
-  _ui->actionCamera_Positions->setEnabled(true);
-  _ui->actionSave_camera_positions->setEnabled(true);
-  _ui->actionRemove_camera_position->setEnabled(true);
+  connect( action , SIGNAL( triggered( bool )) ,
+           this , SLOT( applyCameraPosition( )));
+  _ui->actionCamera_Positions->menu( )->addAction( action );
+  _ui->actionCamera_Positions->setEnabled( true );
+  _ui->actionSave_camera_positions->setEnabled( true );
+  _ui->actionRemove_camera_position->setEnabled( true );
 }
 
-void MainWindow::removeCameraPosition()
+void MainWindow::removeCameraPosition( )
 {
   bool ok = false;
   QStringList items;
 
-  auto actions = _ui->actionCamera_Positions->menu()->actions();
-  auto insertItemName = [&items](const QAction *a){ items << a->text(); };
-  std::for_each(actions.cbegin(), actions.cend(), insertItemName);
+  auto actions = _ui->actionCamera_Positions->menu( )->actions( );
+  auto insertItemName = [ &items ]( const QAction* a )
+  { items << a->text( ); };
+  std::for_each( actions.cbegin( ) , actions.cend( ) , insertItemName );
 
-  auto item = QInputDialog::getItem(this, tr("Remove camera position"), tr("Position name:"), items, 0, false, &ok);
-  if (ok && !item.isEmpty())
+  auto item = QInputDialog::getItem( this , tr( "Remove camera position" ) ,
+                                     tr( "Position name:" ) , items , 0 ,
+                                     false , &ok );
+  if ( ok && !item.isEmpty( ))
   {
-    auto actionOfName = [&item](const QAction *a){ return a->text() == item; };
-    const auto it = std::find_if(actions.cbegin(), actions.cend(), actionOfName);
-    auto distance = std::distance(actions.cbegin(), it);
-    auto action = actions.at(distance);
-    _ui->actionCamera_Positions->menu()->removeAction(action);
+    auto actionOfName = [ &item ]( const QAction* a )
+    { return a->text( ) == item; };
+    const auto it = std::find_if( actions.cbegin( ) , actions.cend( ) ,
+                                  actionOfName );
+    auto distance = std::distance( actions.cbegin( ) , it );
+    auto action = actions.at( static_cast<int>(distance));
+    _ui->actionCamera_Positions->menu( )->removeAction( action );
     delete action;
 
-    const auto enabled = actions.size() > 1;
-    _ui->actionRemove_camera_position->setEnabled(enabled);
-    _ui->actionSave_camera_positions->setEnabled(enabled);
-    _ui->actionCamera_Positions->setEnabled(enabled);
+    const auto enabled = actions.size( ) > 1;
+    _ui->actionRemove_camera_position->setEnabled( enabled );
+    _ui->actionSave_camera_positions->setEnabled( enabled );
+    _ui->actionCamera_Positions->setEnabled( enabled );
   }
 }
 
-void MainWindow::applyCameraPosition()
+void MainWindow::applyCameraPosition( )
 {
-  auto action = qobject_cast<QAction *>(sender());
-  if(action)
+  auto action = qobject_cast< QAction* >( sender( ));
+  if ( action )
   {
-    auto positionString = action->property(POSITION_KEY).toString();
-    CameraPosition position(positionString);
-    _openGLWidget->setCameraPosition(position);
+    auto positionString = action->property( POSITION_KEY ).toString( );
+    CameraPosition position( positionString );
+    _scene->cameraPosition( position.position , position.radius ,
+                            position.rotation );
   }
 }
 
-void MainWindow::_generateNeuritesLayout( void )
+void MainWindow::_generateNeuritesLayout( )
 {
-  const unsigned int numDendrites = _openGLWidget->numNeuritesToEdit( );
+  const unsigned int numDendrites = _scene->numEditMorphologyNeurites( );
 
   _neuriteSliders.clear( );
 
-  QLayoutItem* child;
-  while(( child = _neuritesLayout->takeAt( 0 )) != 0 )
+  QLayoutItem * child;
+  while (( child = _neuritesLayout->takeAt( 0 )) != 0 )
   {
     delete child->widget( );
   }
 
   QSlider* _neuriteSlider;
-  for( unsigned int i = 0; i < numDendrites; i++ )
+  for ( unsigned int i = 0; i < numDendrites; i++ )
   {
     _neuriteSlider = new QSlider( Qt::Horizontal );
-    _neuriteSlider->setMinimum(0);
-    _neuriteSlider->setMaximum(200);
-    _neuriteSlider->setValue(100);
+    _neuriteSlider->setMinimum( 0 );
+    _neuriteSlider->setMaximum( 200 );
+    _neuriteSlider->setValue( 100 );
     _neuriteSlider->setToolTip(
       "Scales the distance between the position of the first tracing point of\n"
       "neurite n and the surface of the initial sphere used to generate the\n"
@@ -812,40 +864,38 @@ void MainWindow::_generateNeuritesLayout( void )
 
     _neuritesLayout->addWidget( _neuriteSlider );
     _neuriteSliders.push_back( _neuriteSlider );
-    // connect( _neuriteSlider, SIGNAL( sliderReleased( )),
-    //        this, SLOT( onActionGenerate( )));
-    connect( _neuriteSlider, SIGNAL( valueChanged( int )),
-           this, SLOT( onActionGenerate( int )));
+    connect( _neuriteSlider , SIGNAL( valueChanged( int )) ,
+             this , SLOT( onActionGenerate( int )));
   }
-  _radiusSlider->setValue(100);
+  _radiusSlider->setValue( 100 );
 }
 
-void MainWindow::_initExtractionDock( void )
+void MainWindow::_initExtractionDock( )
 {
   _extractMeshDock = new QDockWidget( );
-  this->addDockWidget( Qt::DockWidgetAreas::enum_type::RightDockWidgetArea,
-                       _extractMeshDock, Qt::Vertical );
-  _extractMeshDock->setSizePolicy(QSizePolicy::MinimumExpanding,
-                             QSizePolicy::Expanding);
+  this->addDockWidget( Qt::DockWidgetAreas::enum_type::RightDockWidgetArea ,
+                       _extractMeshDock , Qt::Vertical );
+  _extractMeshDock->setSizePolicy( QSizePolicy::MinimumExpanding ,
+                                   QSizePolicy::Expanding );
 
-  _extractMeshDock->setFeatures(QDockWidget::DockWidgetClosable |
-                           QDockWidget::DockWidgetMovable |
-                           QDockWidget::DockWidgetFloatable);
+  _extractMeshDock->setFeatures( QDockWidget::DockWidgetClosable |
+                                 QDockWidget::DockWidgetMovable |
+                                 QDockWidget::DockWidgetFloatable );
   _extractMeshDock->setWindowTitle( QString( "Edit And Save" ));
-  _extractMeshDock->setMinimumSize( 200, 200 );
+  _extractMeshDock->setMinimumSize( 200 , 200 );
 
   _extractMeshDock->close( );
 
-  QWidget* newWidget = new QWidget( );
+  auto* newWidget = new QWidget( );
   _extractMeshDock->setWidget( newWidget );
 
-  QVBoxLayout* _meshDockLayout = new QVBoxLayout( );
+  auto* _meshDockLayout = new QVBoxLayout( );
   _meshDockLayout->setAlignment( Qt::AlignTop );
   newWidget->setLayout( _meshDockLayout );
 
   //Neurons group
-  QGroupBox* _neuronsGroup = new QGroupBox( QString( "Select Neuron" ));
-  QVBoxLayout* _neuronsLayout = new QVBoxLayout( );
+  auto* _neuronsGroup = new QGroupBox( QString( "Select Neuron" ));
+  auto* _neuronsLayout = new QVBoxLayout( );
   _neuronsGroup->setLayout( _neuronsLayout );
   _meshDockLayout->addWidget( _neuronsGroup );
 
@@ -855,7 +905,7 @@ void MainWindow::_initExtractionDock( void )
 
   // Soma reconstruction group
   _somaGroup = new QGroupBox( QString( "Parameters" ));
-  QVBoxLayout* _somaGroupLayout = new QVBoxLayout( );
+  auto* _somaGroupLayout = new QVBoxLayout( );
   _somaGroup->setLayout( _somaGroupLayout );
   _meshDockLayout->addWidget( _somaGroup );
   _somaGroup->hide( );
@@ -866,68 +916,69 @@ void MainWindow::_initExtractionDock( void )
   _radiusSlider->setValue( 100 );
   _radiusSlider->setToolTip(
     "Scales the radius of the initial sphere used to generate the soma. [0-1]."
-    );
+  );
 
   _somaGroupLayout->addWidget( new QLabel( QString( "Radius factor" )));
   _somaGroupLayout->addWidget( _radiusSlider );
 
-  QScrollArea* _neuritesArea = new QScrollArea( );
-  _neuritesArea->setSizePolicy( QSizePolicy::MinimumExpanding,
+  auto* _neuritesArea = new QScrollArea( );
+  _neuritesArea->setSizePolicy( QSizePolicy::MinimumExpanding ,
                                 QSizePolicy::Expanding );
   _neuritesArea->setVerticalScrollBarPolicy( Qt::ScrollBarAsNeeded );
   _neuritesArea->setHorizontalScrollBarPolicy( Qt::ScrollBarAsNeeded );
   _neuritesArea->setWidgetResizable( true );
   _neuritesArea->setFrameShape( QFrame::NoFrame );
   _somaGroupLayout->addWidget( _neuritesArea );
-  QWidget* _neuritesWidget = new QWidget( );
+  auto* _neuritesWidget = new QWidget( );
   _neuritesArea->setWidget( _neuritesWidget );
   _neuritesLayout = new QVBoxLayout( );
   _neuritesWidget->setLayout( _neuritesLayout );
 
   _extractButton = new QPushButton( QString( "Save" ));
-  _extractButton->setSizePolicy( QSizePolicy::Fixed,
-                                 QSizePolicy::Fixed);
+  _extractButton->setSizePolicy( QSizePolicy::Fixed ,
+                                 QSizePolicy::Fixed );
   _extractButton->setEnabled( false );
   _meshDockLayout->addWidget( _extractButton );
 
-  connect( _neuronList, SIGNAL( itemClicked( QListWidgetItem* )),
-           this, SLOT( onListClicked( QListWidgetItem* )));
+  connect( _neuronList , SIGNAL( itemClicked( QListWidgetItem * )) ,
+           this , SLOT( onListClicked( QListWidgetItem * )));
 
-  connect( _extractMeshDock->toggleViewAction( ), SIGNAL( toggled( bool )),
-           _ui->actionEditSave, SLOT( setChecked( bool )));
-  connect( _ui->actionEditSave, SIGNAL( triggered( )),
-           this, SLOT( updateExtractMeshDock( )));
+  connect( _extractMeshDock->toggleViewAction( ) , SIGNAL( toggled( bool )) ,
+           _ui->actionEditSave , SLOT( setChecked( bool )));
+
+  connect( _ui->actionEditSave , SIGNAL( triggered( )) ,
+           this , SLOT( updateExtractMeshDock( )));
 
 }
 
-void MainWindow::_initConfigurationDock( void )
+void MainWindow::_initConfigurationDock( )
 {
   _configurationDock = new QDockWidget( );
-  this->addDockWidget( Qt::DockWidgetAreas::enum_type::LeftDockWidgetArea,
-                       _configurationDock, Qt::Vertical );
-  _configurationDock->setSizePolicy(QSizePolicy::MinimumExpanding,
-                             QSizePolicy::Expanding);
+  this->addDockWidget( Qt::DockWidgetAreas::enum_type::LeftDockWidgetArea ,
+                       _configurationDock , Qt::Vertical );
+  _configurationDock->setSizePolicy( QSizePolicy::MinimumExpanding ,
+                                     QSizePolicy::Expanding );
 
-  _configurationDock->setFeatures(QDockWidget::DockWidgetClosable |
-                           QDockWidget::DockWidgetMovable |
-                           QDockWidget::DockWidgetFloatable);
+  _configurationDock->setFeatures( QDockWidget::DockWidgetClosable |
+                                   QDockWidget::DockWidgetMovable |
+                                   QDockWidget::DockWidgetFloatable );
   _configurationDock->setWindowTitle( QString( "Configuration" ));
-  _configurationDock->setMinimumSize( 200, 200 );
+  _configurationDock->setMinimumSize( 200 , 200 );
 
   _configurationDock->close( );
 
-  QWidget* newWidget = new QWidget( );
+  auto* newWidget = new QWidget( );
   _configurationDock->setWidget( newWidget );
 
-  QVBoxLayout* _configDockLayout = new QVBoxLayout( );
+  auto* _configDockLayout = new QVBoxLayout( );
   _configDockLayout->setAlignment( Qt::AlignTop );
   newWidget->setLayout( _configDockLayout );
 
-  QGroupBox* tessParamsGroup = new QGroupBox( QString( "Tessellation params" ));
-  tessParamsGroup->setSizePolicy( QSizePolicy::Fixed,
-                                  QSizePolicy::Fixed);
+  auto* tessParamsGroup = new QGroupBox( QString( "Tessellation params" ));
+  tessParamsGroup->setSizePolicy( QSizePolicy::Fixed ,
+                                  QSizePolicy::Fixed );
   _configDockLayout->addWidget( tessParamsGroup );
-  QVBoxLayout* vbox = new QVBoxLayout;
+  auto* vbox = new QVBoxLayout;
   tessParamsGroup->setLayout( vbox );
 
   _lotSlider = new QSlider( Qt::Horizontal );
@@ -936,7 +987,7 @@ void MainWindow::_initConfigurationDock( void )
   _lotSlider->setValue( 4 );
   _lotSlider->setToolTip(
     "Maximum level of subdivisions for the visualization [1-30]."
-    );
+  );
   vbox->addWidget(
     new QLabel( QString( "Subdivision Level" )));
   vbox->addWidget( _lotSlider );
@@ -946,8 +997,8 @@ void MainWindow::_initConfigurationDock( void )
   _distanceSlider->setMaximum( 1000 );
   _distanceSlider->setValue( 10 );
   _distanceSlider->setToolTip(
-     "Further distance to which the subdivision is applied [0-1], being 1\n"
-     "the camera maximum visibility distance." );
+    "Further distance to which the subdivision is applied [0-1], being 1\n"
+    "the camera maximum visibility distance." );
   vbox->addWidget(
     new QLabel( QString( "Distance threshold" )));
   vbox->addWidget( _distanceSlider );
@@ -965,67 +1016,67 @@ void MainWindow::_initConfigurationDock( void )
 
   _radioLinear->setChecked( true );
 
-  connect( _radioLinear, SIGNAL( toggled( bool )),
-           _distanceSlider, SLOT( setEnabled( bool )));
+  connect( _radioLinear , SIGNAL( toggled( bool )) ,
+           _distanceSlider , SLOT( setEnabled( bool )));
 
+  connect( _configurationDock->toggleViewAction( ) , SIGNAL( toggled( bool )) ,
+           _ui->actionConfiguration , SLOT( setChecked( bool )));
 
-  connect( _configurationDock->toggleViewAction( ), SIGNAL( toggled( bool )),
-           _ui->actionConfiguration, SLOT( setChecked( bool )));
-  connect( _ui->actionConfiguration, SIGNAL( triggered( )),
-           this, SLOT( updateConfigurationDock( )));
+  connect( _ui->actionConfiguration , SIGNAL( triggered( )) ,
+           this , SLOT( updateConfigurationDock( )));
 }
 
-void MainWindow::_initRenderOptionsDock( void )
+void MainWindow::_initRenderOptionsDock( )
 {
   _renderOptionsDock = new QDockWidget( );
-  this->addDockWidget( Qt::DockWidgetAreas::enum_type::LeftDockWidgetArea,
-                       _renderOptionsDock, Qt::Vertical );
-  _renderOptionsDock->setSizePolicy(QSizePolicy::Fixed,
-                                    QSizePolicy::Fixed);
-  _renderOptionsDock->setFeatures(QDockWidget::DockWidgetClosable |
-                           QDockWidget::DockWidgetMovable |
-                           QDockWidget::DockWidgetFloatable);
+  this->addDockWidget( Qt::DockWidgetAreas::enum_type::LeftDockWidgetArea ,
+                       _renderOptionsDock , Qt::Vertical );
+  _renderOptionsDock->setSizePolicy( QSizePolicy::Fixed ,
+                                     QSizePolicy::Fixed );
+  _renderOptionsDock->setFeatures( QDockWidget::DockWidgetClosable |
+                                   QDockWidget::DockWidgetMovable |
+                                   QDockWidget::DockWidgetFloatable );
   _renderOptionsDock->setWindowTitle( QString( "Render Options" ));
-  _renderOptionsDock->setMinimumSize( 200, 200 );
+  _renderOptionsDock->setMinimumSize( 200 , 200 );
 
   _renderOptionsDock->close( );
 
-  QWidget* newWidget = new QWidget( );
+  auto* newWidget = new QWidget( );
   _renderOptionsDock->setWidget( newWidget );
 
-  QVBoxLayout* roDockLayout = new QVBoxLayout( );
+  auto* roDockLayout = new QVBoxLayout( );
   roDockLayout->setAlignment( Qt::AlignTop );
   newWidget->setLayout( roDockLayout );
 
 
-  QGroupBox* colorGroup = new QGroupBox( QString( "Color" ));
-  colorGroup->setSizePolicy( QSizePolicy(QSizePolicy::Fixed,
-                                         QSizePolicy::Fixed));
+  auto* colorGroup = new QGroupBox( QString( "Color" ));
+  colorGroup->setSizePolicy( QSizePolicy( QSizePolicy::Fixed ,
+                                          QSizePolicy::Fixed ));
   roDockLayout->addWidget( colorGroup );
-  QGridLayout* gridbox = new QGridLayout;
+  auto* gridbox = new QGridLayout;
   colorGroup->setLayout( gridbox );
 
-  gridbox->addWidget( new QLabel( QString("Background color")), 0, 0);
+  gridbox->addWidget( new QLabel( QString( "Background color" )) , 0 , 0 );
   _backGroundColor = new ColorSelectionWidget( this );
-  gridbox->addWidget( _backGroundColor, 0, 1 );
+  gridbox->addWidget( _backGroundColor , 0 , 1 );
 
-  gridbox->addWidget( new QLabel( QString("Neuron color")), 1, 0);
+  gridbox->addWidget( new QLabel( QString( "Neuron color" )) , 1 , 0 );
   _neuronColor = new ColorSelectionWidget( this );
-  gridbox->addWidget( _neuronColor, 1, 1 );
+  gridbox->addWidget( _neuronColor , 1 , 1 );
 
-  gridbox->addWidget( new QLabel( QString("Selected neuron color")), 2, 0);
+  gridbox->addWidget( new QLabel( QString( "Selected neuron color" )) , 2 , 0 );
   _selectedNeuronColor = new ColorSelectionWidget( this );
-  gridbox->addWidget( _selectedNeuronColor, 2, 1 );
+  gridbox->addWidget( _selectedNeuronColor , 2 , 1 );
 
 
-  QGroupBox* renderGroup = new QGroupBox( QString( "Render piece selection" ));
+  auto* renderGroup = new QGroupBox( QString( "Render piece selection" ));
   roDockLayout->addWidget( renderGroup );
-  QVBoxLayout* vbox = new QVBoxLayout;
+  auto* vbox = new QVBoxLayout;
   renderGroup->setLayout( vbox );
 
   _neuronRender = new QComboBox( );
-  _neuronRender->setSizePolicy( QSizePolicy(QSizePolicy::Fixed,
-                                            QSizePolicy::Fixed));
+  _neuronRender->setSizePolicy( QSizePolicy( QSizePolicy::Fixed ,
+                                             QSizePolicy::Fixed ));
   vbox->addWidget( new QLabel( QString( "Neuron" )));
   vbox->addWidget( _neuronRender );
   _neuronRender->addItem( QString( "all" ));
@@ -1033,39 +1084,165 @@ void MainWindow::_initRenderOptionsDock( void )
   _neuronRender->addItem( QString( "neurites" ));
 
   _selectedNeuronRender = new QComboBox( );
-  _selectedNeuronRender->setSizePolicy( QSizePolicy(QSizePolicy::Fixed,
-                                                    QSizePolicy::Fixed));
+  _selectedNeuronRender->setSizePolicy( QSizePolicy( QSizePolicy::Fixed ,
+                                                     QSizePolicy::Fixed ));
   vbox->addWidget( new QLabel( QString( "Selected neuron" )));
   vbox->addWidget( _selectedNeuronRender );
   _selectedNeuronRender->addItem( QString( "all" ));
   _selectedNeuronRender->addItem( QString( "soma" ));
   _selectedNeuronRender->addItem( QString( "neurites" ));
 
-  connect( _renderOptionsDock->toggleViewAction( ), SIGNAL( toggled( bool )),
-           _ui->actionRenderOptions, SLOT( setChecked( bool )));
-  connect( _ui->actionRenderOptions, SIGNAL( triggered( )),
-           this, SLOT( updateRenderOptionsDock( )));
+  connect( _renderOptionsDock->toggleViewAction( ) , SIGNAL( toggled( bool )) ,
+           _ui->actionRenderOptions , SLOT( setChecked( bool )));
+
+  connect( _ui->actionRenderOptions , SIGNAL( triggered( )) ,
+           this , SLOT( updateRenderOptionsDock( )));
 }
 
-void MainWindow::closeEvent(QCloseEvent *e)
+void MainWindow::closeEvent( QCloseEvent* e )
 {
-  if(_recorder)
+  if ( _recorder )
   {
-    QMessageBox msgBox(this);
-    msgBox.setWindowTitle(tr("Exit NeuroTessMesh"));
+    QMessageBox msgBox( this );
+    msgBox.setWindowTitle( tr( "Exit NeuroTessMesh" ));
     msgBox.setWindowIcon( QIcon( ":/icons/rsc/neurotessmesh.png" ));
-    msgBox.setText(tr("A recording is being made. Do you really want to exit NeuroTessMesh?"));
-    msgBox.setStandardButtons(QMessageBox::Cancel|QMessageBox::Yes);
+    msgBox.setText( tr(
+      "A recording is being made. Do you really want to exit NeuroTessMesh?" ));
+    msgBox.setStandardButtons( QMessageBox::Cancel | QMessageBox::Yes );
 
-    if(msgBox.exec() != QMessageBox::Yes)
+    if ( msgBox.exec( ) != QMessageBox::Yes )
     {
-      e->ignore();
+      e->ignore( );
       return;
     }
 
-    RecorderUtils::stopAndWait(_recorder, this);
+    RecorderUtils::stopAndWait( _recorder , this );
     _recorder = nullptr;
   }
 
-  QMainWindow::closeEvent(e);
+  QMainWindow::closeEvent( e );
+}
+
+void MainWindow::_initPlayerDock( )
+{
+  _playerDock = new QDockWidget( );
+  this->addDockWidget( Qt::DockWidgetAreas::enum_type::BottomDockWidgetArea ,
+                       _playerDock , Qt::Horizontal );
+  _playerDock->setSizePolicy( QSizePolicy::MinimumExpanding ,
+                              QSizePolicy::Expanding );
+
+  _playerDock->setFeatures( QDockWidget::DockWidgetClosable |
+                            QDockWidget::DockWidgetMovable |
+                            QDockWidget::DockWidgetFloatable );
+  _playerDock->setAllowedAreas(Qt::DockWidgetAreas::enum_type::BottomDockWidgetArea|
+                               Qt::DockWidgetAreas::enum_type::TopDockWidgetArea);
+  _playerDock->setWindowTitle( QString( "Player Options" ));
+  _playerDock->show( );
+  _playerDock->close( );
+
+#ifdef NEUROTESSMESH_USE_SIMIL
+  auto playerControls = new qsimil::QSimControlWidget( _playerDock );
+  _playerDock->setWidget( playerControls );
+
+  connect( playerControls , SIGNAL( frame( )) ,
+           _openGLWidget , SLOT( update( )));
+
+  connect( _playerDock->toggleViewAction( ) , SIGNAL( toggled( bool )) ,
+           _ui->actionSimulation_player_options , SLOT( setChecked( bool )));
+
+  connect( _ui->actionSimulation_player_options , SIGNAL( triggered( )) ,
+           this , SLOT( updatePlayerOptionsDock( )));
+#endif
+}
+
+void MainWindow::loadData( const std::string& arg1 , const std::string& arg2 ,
+                           const neurotessmesh::LoaderThread::DataFileType type )
+{
+  if ( m_dataLoader ) return; // already loading?
+
+  m_dataLoader = std::make_shared< neurotessmesh::LoaderThread >( arg1 , arg2 ,
+                                                                  type );
+  auto dialog = new neurotessmesh::LoadingDialog{ this };
+
+  connect( m_dataLoader.get( ) , SIGNAL( finished( )) ,
+           this , SLOT( onDataLoaded( )) , Qt::QueuedConnection );
+
+  connect( m_dataLoader.get( ) , SIGNAL( destroyed( QObject * )) ,
+           dialog , SLOT( closeDialog( )));
+
+  connect( m_dataLoader.get( ) ,
+           SIGNAL( progress(const QString & , const unsigned int)) ,
+           dialog , SLOT( progress(const QString & , const unsigned int)));
+
+  dialog->show( );
+
+  m_dataLoader->start( );
+}
+
+void MainWindow::onDataLoaded( )
+{
+  const auto errors = m_dataLoader->errors( );
+  if ( !errors.isEmpty( ))
+  {
+    m_dataLoader = nullptr;
+
+    QMessageBox msgbox{ this };
+    msgbox.setWindowTitle( tr( "Error loading dataset" ));
+    msgbox.setIcon( QMessageBox::Icon::Critical );
+    msgbox.setText( errors );
+    msgbox.setWindowIcon( QIcon( ":/icons/rsc/neurotessmesh.png" ));
+    msgbox.setStandardButtons( QMessageBox::Ok );
+    msgbox.exec( );
+    return;
+  }
+
+  try
+  {
+    _openGLWidget->makeCurrent();
+    _openGLWidget->update( );
+
+    _scene = std::make_shared< neurotessmesh::Scene >(
+      _openGLWidget->getCamera( ) , m_dataLoader->getDataset( )
+#ifdef NEUROTESSMESH_USE_SIMIL
+      , m_dataLoader->getPlayer( )
+#endif
+      );
+    _openGLWidget->setScene( _scene );
+  }
+  catch ( const std::exception& e )
+  {
+    QMessageBox msgbox{ this };
+    msgbox.setWindowTitle( tr( "Error loading dataset" ));
+    msgbox.setIcon( QMessageBox::Icon::Critical );
+    msgbox.setText( tr( "Unable to load dataset. Geometry error." ));
+    msgbox.setWindowIcon( QIcon( ":/icons/rsc/neurotessmesh.png" ));
+    msgbox.setStandardButtons( QMessageBox::Ok );
+    msgbox.exec( );
+    return;
+  }
+
+  _openGLWidget->onLotValueChanged( _lotSlider->value( ));
+  _openGLWidget->onDistanceValueChanged( _distanceSlider->value( ));
+
+  updateNeuronList( );
+  _backGroundColor->color( QColor( 255 , 255 , 255 ));
+  _neuronColor->color( QColor( 0 , 120 , 250 ));
+  _selectedNeuronColor->color( QColor( 250 , 120 , 0 ));
+
+  _openGLWidget->home( );
+  _openGLWidget->changeNeuronPiece( _neuronRender->currentIndex( ));
+  _openGLWidget->changeSelectedNeuronPiece(
+    _selectedNeuronRender->currentIndex( ));
+#ifdef NEUROTESSMESH_USE_SIMIL
+  auto playerWidget = qobject_cast< qsimil::QSimControlWidget* >(
+    _playerDock->widget( ));
+  if ( playerWidget )
+  {
+
+    // disable hasta que hagamos el merge a master de SimIL
+    playerWidget->init( m_dataLoader->getPlayer( ));
+  }
+#endif
+
+  m_dataLoader = nullptr;
 }

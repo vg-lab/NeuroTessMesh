@@ -12,7 +12,7 @@
 #include <QMainWindow>
 #include "OpenGLWidget.h"
 #include "ColorSelectionWidget.h"
-
+#include "LoaderThread.h"
 
 #include <QDockWidget>
 #include <QListWidget>
@@ -24,47 +24,67 @@
 
 namespace Ui
 {
-class MainWindow;
+  class MainWindow;
 }
 
 class Recorder;
+
 class QCloseEvent;
+
+namespace neurotessmesh
+{
+  class LoaderThread;
+}
 
 class MainWindow
   : public QMainWindow
 {
-  Q_OBJECT
+Q_OBJECT
 
 public:
 
-  explicit MainWindow( QWidget* parent_ = nullptr,
+  explicit MainWindow( QWidget* parent_ = nullptr ,
                        bool updateOnIdle_ = false );
-  ~MainWindow( void );
+
+  ~MainWindow( );
 
   void init( const std::string& zeqSession_ );
 
-  void showStatusBarMessage ( const QString& message );
+  void showStatusBarMessage( const QString& message );
 
-  void openBlueConfig( const std::string& fileName,
-                       const std::string& target);
+  void openBlueConfig( const std::string& fileName ,
+                       const std::string& target );
+
   void openXMLScene( const std::string& fileName );
+
   void openSWCFile( const std::string& fileName );
 
-  void updateNeuronList( void );
+  void updateNeuronList( );
 
 public slots:
 
-  void home( void );
-  void openBlueConfigThroughDialog( void );
-  void openXMLSceneThroughDialog( void );
-  void openSWCFileThroughDialog( void );
-  void showAbout( void );
-  void openRecorder( void );
+  void home( );
 
-  void updateExtractMeshDock( void );
-  void updateConfigurationDock( void );
-  void updateRenderOptionsDock( void );
-  void onListClicked( QListWidgetItem *item );
+  void openBlueConfigThroughDialog( );
+
+  void openXMLSceneThroughDialog( );
+
+  void openSWCFileThroughDialog( );
+
+  void showAbout( );
+
+  void openRecorder( );
+
+  void updateExtractMeshDock( );
+
+  void updateConfigurationDock( );
+
+  void updateRenderOptionsDock( );
+
+  void updatePlayerOptionsDock( );
+
+  void onListClicked( QListWidgetItem* item );
+
   void onActionGenerate( int value_ );
 
 protected slots:
@@ -74,46 +94,70 @@ protected slots:
   /** \brief Loads camera positions from a file.
    *
    */
-  void loadCameraPositions();
+  void loadCameraPositions( );
 
   /** \brief Saves camera positions to a file on disk.
    *
    */
-  void saveCameraPositions();
+  void saveCameraPositions( );
 
   /** \brief Stores current camera position in the positions list.
    *
    */
-  void addCameraPosition();
+  void addCameraPosition( );
 
   /** \brief Lets the user select a position to remove from the positions list.
    *
    */
-  void removeCameraPosition();
+  void removeCameraPosition( );
 
   /** \brief Changes the camera position to the one specified by the user.
    *
    */
-  void applyCameraPosition();
+  void applyCameraPosition( );
+
+  /** \brief Gets the dataset and player from the loader thread and initializes
+   * openGL widget and scene.
+   *
+   */
+  void onDataLoaded( );
 
 protected:
-  virtual void closeEvent(QCloseEvent *e) override;
+  virtual void closeEvent( QCloseEvent* e ) override;
 
   QString _lastOpenedFileName;
 
 private:
 
-  void _generateNeuritesLayout( void );
-  void _initExtractionDock( void );
-  void _initConfigurationDock( void );
-  void _initRenderOptionsDock( void );
+  void _generateNeuritesLayout( );
+
+  void _initExtractionDock( );
+
+  void _initConfigurationDock( );
+
+  void _initRenderOptionsDock( );
+
+  void _initPlayerDock( );
+
+  /** \brief Launches a LoaderThread with the gicen arguments.
+   * \param[in] arg1 First argument,required: dataset filename.
+   * \param[in] arg2 Second argument, only required for BlueConfig (target).
+   * \param[in] type Dataset type.
+   *
+   */
+  void loadData( const std::string& arg1 ,
+                 const std::string& arg2 ,
+                 neurotessmesh::LoaderThread::DataFileType type );
 
   Ui::MainWindow* _ui;
   OpenGLWidget* _openGLWidget;
 
+  std::shared_ptr< neurotessmesh::Scene > _scene;
+
   QDockWidget* _extractMeshDock;
   QDockWidget* _configurationDock;
   QDockWidget* _renderOptionsDock;
+  QDockWidget* _playerDock;
 
   QListWidget* _neuronList;
   QSlider* _radiusSlider;
@@ -137,4 +181,5 @@ private:
 
   // Recorder
   Recorder* _recorder;
+  std::shared_ptr< neurotessmesh::LoaderThread > m_dataLoader;
 };
