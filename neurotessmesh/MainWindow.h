@@ -59,6 +59,8 @@ public:
 
   void openSWCFile( const std::string& fileName );
 
+  void openHDF5File( const std::string& fileName );
+
   void updateNeuronList( );
 
 public slots:
@@ -70,6 +72,8 @@ public slots:
   void openXMLSceneThroughDialog( );
 
   void openSWCFileThroughDialog( );
+
+  void openHDF5FileThroughDialog( );
 
   void showAbout( );
 

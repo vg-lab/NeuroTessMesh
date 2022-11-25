@@ -136,7 +136,6 @@ namespace neurotessmesh
           const auto timeStamp = _simulationPlayer->currentTime();
           _renderer->render( std::get< 0 >( _unselectedNeurons ) ,
                              std::get< 1 >( _unselectedNeurons ) ,
-                             _unselectedColor,
                              calculateUnselectedColors(timeStamp) , true ,
                              _paintUnselectedSoma ,
                              _paintUnselectedNeurites );

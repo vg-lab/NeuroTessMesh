@@ -52,7 +52,7 @@ namespace neurotessmesh
       Q_OBJECT
     public:
       enum class DataFileType
-      { BlueConfig, SWC, NsolScene };
+      { BlueConfig, SWC, NsolScene, HDF5 };
 
       /** \brief LoaderThread class constructor.
        * \param[in] arg1 Dataset filename.

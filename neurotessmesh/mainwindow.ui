@@ -34,6 +34,7 @@
     <addaction name="actionOpenBlueConfig"/>
     <addaction name="actionOpenXMLScene"/>
     <addaction name="actionOpenSWCFile"/>
+    <addaction name="actionOpenHDF5File"/>
     <addaction name="actionCloseData"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_camera_positions"/>
@@ -88,6 +89,7 @@
    <addaction name="actionOpenBlueConfig"/>
    <addaction name="actionOpenXMLScene"/>
    <addaction name="actionOpenSWCFile"/>
+   <addaction name="actionOpenHDF5File"/>
    <addaction name="separator"/>
    <addaction name="actionHome"/>
    <addaction name="actionConfiguration"/>
@@ -222,6 +224,21 @@
    </property>
    <property name="toolTip">
     <string>Open SWC</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+S</string>
+   </property>
+  </action>
+  <action name="actionOpenHDF5File">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/rsc/open_swc.png</normaloff>:/icons/rsc/open_swc.png</iconset>
+   </property>
+   <property name="text">
+    <string>Open HDF5</string>
+   </property>
+   <property name="toolTip">
+    <string>Open HDF5</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+S</string>
