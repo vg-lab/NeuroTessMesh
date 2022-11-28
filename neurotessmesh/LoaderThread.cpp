@@ -106,7 +106,7 @@ void LoaderThread::run( )
         break;
 
       case DataFileType::SWC:
-        emit progress( tr( "Loading Neuron" ) , 50 );
+        emit progress( tr( "Loading Neuron" ) , 50F );
         m_dataset->loadNeuronFromFile< nsol::Node ,
           nsol::NeuronMorphologySection ,
           nsol::Dendrite ,
@@ -131,6 +131,8 @@ void LoaderThread::run( )
       {
         H5Morphologies morphologies( m_fileName , "" );
         morphologies.load();
+
+
       }
 
         break;
@@ -144,7 +146,7 @@ void LoaderThread::run( )
   }
   catch ( const std::exception& e )
   {
-    if ( m_dataset ) delete m_dataset;
+    delete m_dataset;
     m_errors = QString::fromStdString( e.what( ));
   }
 }
