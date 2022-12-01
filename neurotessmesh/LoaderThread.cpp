@@ -106,7 +106,7 @@ void LoaderThread::run( )
         break;
 
       case DataFileType::SWC:
-        emit progress( tr( "Loading Neuron" ) , 50F );
+        emit progress( tr( "Loading Neuron" ) , 50 );
         m_dataset->loadNeuronFromFile< nsol::Node ,
           nsol::NeuronMorphologySection ,
           nsol::Dendrite ,
@@ -128,13 +128,7 @@ void LoaderThread::run( )
         break;
 
       case DataFileType::HDF5:
-      {
-        H5Morphologies morphologies( m_fileName , "" );
-        morphologies.load();
-
-
-      }
-
+        loadH5Morphology( );
         break;
 
       default:
@@ -148,6 +142,110 @@ void LoaderThread::run( )
   {
     delete m_dataset;
     m_errors = QString::fromStdString( e.what( ));
+  }
+}
+
+uint8_t LoaderThread::getTypeFromGroupName( const std::string& name )
+{
+  if ( name == "BasketCell" ) return nsol::Neuron::BASKET;
+  if ( name == "GolgiCell" ) return nsol::Neuron::GOLGI;
+  if ( name == "GranuleCell" ) return nsol::Neuron::GRANULE;
+  if ( name == "PurkinjeCell" ) return nsol::Neuron::PURKINJE;
+  if ( name == "StellateCell" ) return nsol::Neuron::STELLATE;
+  return nsol::Neuron::UNDEFINED;
+}
+
+void LoaderThread::loadH5Morphology( )
+{
+  H5Morphologies morphologies( m_fileName , "" );
+  morphologies.load( );
+
+  uint32_t neuronId = 0;
+  for ( const auto& neuron: morphologies.getCells( ))
+  {
+    auto* soma = new nsol::Soma( );
+    auto* morphology = new nsol::NeuronMorphology( soma );
+
+    std::vector< nsol::NeuronMorphologySection* > sections;
+    sections.resize( neuron.neurites.size( ));
+
+    for ( uint32_t id = 0; id < neuron.neurites.size( ); ++id )
+    {
+      auto& item = neuron.neurites[ id ];
+      if ( item.type == MorphologyType::SOMA )
+      {
+        for ( uint32_t i = 0; i < item.radii.size( ); ++i )
+        {
+          soma->addNode( new nsol::Node(
+            nsol::Vec3f(
+              static_cast<float>(item.x[ i ]) ,
+              static_cast<float >(item.y[ i ]) ,
+              static_cast<float >(item.z[ i ])
+            ) ,
+            0 ,
+            static_cast<float >(item.radii[ i ])
+          ));
+        }
+      }
+      else
+      {
+        auto* section = new nsol::NeuronMorphologySection( );
+        sections[ id ] = section;
+
+        if ( item.radii.empty() )
+        {
+          std::cout << "WARNING! Neurite " << id << " of neuron "
+                    << neuron.name << " has no nodes!" << std::endl;
+          section->addNode( new nsol::Node(
+            nsol::Vec3f( 0.0f , 0.0f , 0.0f ) ,0 ,0.0f
+          ));
+        }
+
+        // Add nodes
+        for ( uint32_t i = 0; i < item.radii.size( ); ++i )
+        {
+          section->addNode( new nsol::Node(
+            nsol::Vec3f(
+              static_cast<float>(item.x[ i ]) ,
+              static_cast<float >(item.y[ i ]) ,
+              static_cast<float >(item.z[ i ])
+            ) ,
+            0 ,
+            static_cast<float >(item.radii[ i ])
+          ));
+        }
+
+        auto parentType = neuron.neurites[ item.parent ].type;
+        if ( parentType == item.type )
+        {
+          auto* parent = sections[ item.parent ];
+          section->parent( parent );
+          parent->addChild( section );
+        }
+        else
+        {
+          nsol::Neurite* neurite;
+          if ( item.type == MorphologyType::AXON ) neurite = new nsol::Axon( );
+          else neurite = new nsol::Dendrite( );
+          neurite->firstSection( section );
+          morphology->addNeurite( neurite );
+        }
+      }
+    }
+
+    auto* result = new nsol::Neuron(
+      morphology ,
+      0 ,
+      neuronId++ ,
+      nsol::Matrix4_4fIdentity ,
+      nullptr ,
+      static_cast<nsol::Neuron::TMorphologicalType>(
+        getTypeFromGroupName( neuron.name )) ,
+      nsol::Neuron::UNDEFINED_FUNCTIONAL_TYPE
+    );
+
+    m_dataset->addNeuron( result );
+
   }
 }
 
