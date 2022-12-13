@@ -31,6 +31,8 @@ class QString;
 
 class QProgressBar;
 
+enum class NeuronType;
+
 namespace nsol
 {
   class DataSet;
@@ -106,7 +108,7 @@ namespace neurotessmesh
 
     QString m_errors;
 
-    uint8_t getTypeFromGroupName( const std::string& name );
+    uint8_t getTypeFromLoaderType( const NeuronType& type );
 
     void loadH5Morphology( );
   };

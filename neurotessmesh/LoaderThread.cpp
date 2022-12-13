@@ -31,6 +31,9 @@
 
 #endif
 
+#include <Eigen/Geometry>
+#include <Eigen/Eigen>
+
 // Qt
 #include <QString>
 #include <QFileInfo>
@@ -145,24 +148,36 @@ void LoaderThread::run( )
   }
 }
 
-uint8_t LoaderThread::getTypeFromGroupName( const std::string& name )
+uint8_t LoaderThread::getTypeFromLoaderType( const NeuronType& type )
 {
-  if ( name == "BasketCell" ) return nsol::Neuron::BASKET;
-  if ( name == "GolgiCell" ) return nsol::Neuron::GOLGI;
-  if ( name == "GranuleCell" ) return nsol::Neuron::GRANULE;
-  if ( name == "PurkinjeCell" ) return nsol::Neuron::PURKINJE;
-  if ( name == "StellateCell" ) return nsol::Neuron::STELLATE;
+  switch ( type )
+  {
+    case NeuronType::GRANULE_CELL:
+      return nsol::Neuron::GRANULE;
+    case NeuronType::GOLGI_CELL:
+      return nsol::Neuron::GOLGI;
+    case NeuronType::PURKINJE_CELL:
+      return nsol::Neuron::PURKINJE;
+    case NeuronType::STELLATE_CELL:
+      return nsol::Neuron::STELLATE;
+    case NeuronType::BASKET_CELL:
+      return nsol::Neuron::BASKET;
+  }
   return nsol::Neuron::UNDEFINED;
 }
 
 void LoaderThread::loadH5Morphology( )
 {
-  H5Morphologies morphologies( m_fileName , "" );
-  morphologies.load( );
+  H5Morphologies loader( m_fileName , "" );
+  loader.load( );
+
+  std::map< NeuronType , nsol::NeuronMorphology* > morphologiesByType;
 
   uint32_t neuronId = 0;
-  for ( const auto& neuron: morphologies.getCells( ))
+  for ( const auto& pair: loader.getMorphologies( ))
   {
+    auto& neuron = pair.second;
+
     auto* soma = new nsol::Soma( );
     auto* morphology = new nsol::NeuronMorphology( soma );
 
@@ -192,12 +207,12 @@ void LoaderThread::loadH5Morphology( )
         auto* section = new nsol::NeuronMorphologySection( );
         sections[ id ] = section;
 
-        if ( item.radii.empty() )
+        if ( item.radii.empty( ))
         {
-          std::cout << "WARNING! Neurite " << id << " of neuron "
-                    << neuron.name << " has no nodes!" << std::endl;
+          std::cout << "WARNING! Neurite " << id << " has no nodes!"
+                    << std::endl;
           section->addNode( new nsol::Node(
-            nsol::Vec3f( 0.0f , 0.0f , 0.0f ) ,0 ,0.0f
+            nsol::Vec3f( 0.0f , 0.0f , 0.0f ) , 0 , 0.0f
           ));
         }
 
@@ -233,19 +248,28 @@ void LoaderThread::loadH5Morphology( )
       }
     }
 
+    morphologiesByType[ pair.first ] = morphology;
+  }
+
+  for ( const auto& neuron: loader.getNeurons( ))
+  {
+    auto morphology = morphologiesByType[ neuron.type ];
+
+    Eigen::Affine3f transform(Eigen::Translation3f(neuron.x, neuron.y, neuron.z));
+
+
     auto* result = new nsol::Neuron(
       morphology ,
       0 ,
       neuronId++ ,
-      nsol::Matrix4_4fIdentity ,
+      transform.matrix(),
       nullptr ,
       static_cast<nsol::Neuron::TMorphologicalType>(
-        getTypeFromGroupName( neuron.name )) ,
+        getTypeFromLoaderType( neuron.type )) ,
       nsol::Neuron::UNDEFINED_FUNCTIONAL_TYPE
     );
 
     m_dataset->addNeuron( result );
-
   }
 }
 
