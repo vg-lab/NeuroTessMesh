@@ -192,6 +192,11 @@ void MainWindow::init( const std::string& zeqSession_ )
 
   connect( _selectedNeuronColor , SIGNAL( colorChanged( QColor )) ,
            _openGLWidget , SLOT( changeSelectedNeuronColor( QColor )) );
+
+
+#ifndef NEUROTESSMESH_USE_SIMIL
+  _ui->actionOpenHDF5File->setEnabled( false );
+#endif
 }
 
 void MainWindow::showStatusBarMessage( const QString& message )

@@ -232,7 +232,7 @@
   <action name="actionOpenHDF5File">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/icons/rsc/open_swc.png</normaloff>:/icons/rsc/open_swc.png</iconset>
+     <normaloff>:/icons/rsc/open_H5.png</normaloff>:/icons/rsc/open_H5.png</iconset>
    </property>
    <property name="text">
     <string>Open HDF5</string>

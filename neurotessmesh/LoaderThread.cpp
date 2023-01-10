@@ -131,7 +131,9 @@ void LoaderThread::run( )
         break;
 
       case DataFileType::HDF5:
+#ifdef NEUROTESSMESH_USE_SIMIL
         loadH5Morphology( );
+#endif
         break;
 
       default:
@@ -166,6 +168,8 @@ uint8_t LoaderThread::getTypeFromLoaderType( const NeuronType& type )
   return nsol::Neuron::UNDEFINED;
 }
 
+#ifdef NEUROTESSMESH_USE_SIMIL
+
 void LoaderThread::loadH5Morphology( )
 {
   H5Morphologies loader( m_fileName , "" );
@@ -193,12 +197,12 @@ void LoaderThread::loadH5Morphology( )
         {
           soma->addNode( new nsol::Node(
             nsol::Vec3f(
-              static_cast<float>(item.x[ i ]) ,
-              static_cast<float >(item.y[ i ]) ,
-              static_cast<float >(item.z[ i ])
+              static_cast< float >(item.x[ i ]) ,
+              static_cast< float >(item.y[ i ]) ,
+              static_cast< float >(item.z[ i ])
             ) ,
             0 ,
-            static_cast<float >(item.radii[ i ])
+            static_cast< float >(item.radii[ i ])
           ));
         }
       }
@@ -221,12 +225,12 @@ void LoaderThread::loadH5Morphology( )
         {
           section->addNode( new nsol::Node(
             nsol::Vec3f(
-              static_cast<float>(item.x[ i ]) ,
-              static_cast<float >(item.y[ i ]) ,
-              static_cast<float >(item.z[ i ])
+              static_cast< float >(item.x[ i ]) ,
+              static_cast< float >(item.y[ i ]) ,
+              static_cast< float >(item.z[ i ])
             ) ,
             0 ,
-            static_cast<float >(item.radii[ i ])
+            static_cast< float >(item.radii[ i ])
           ));
         }
 
@@ -234,8 +238,16 @@ void LoaderThread::loadH5Morphology( )
         if ( parentType == item.type )
         {
           auto* parent = sections[ item.parent ];
-          section->parent( parent );
-          parent->addChild( section );
+          if ( parent != nullptr )
+          {
+            section->parent( parent );
+            parent->addChild( section );
+          }
+          else
+          {
+            std::cout << "WARNING! Parent of neurite " << id << " of neuron "
+                      << neuron.name << " is null!" << std::endl;
+          }
         }
         else
         {
@@ -272,6 +284,8 @@ void LoaderThread::loadH5Morphology( )
     m_dataset->addNeuron( result );
   }
 }
+
+#endif
 
 LoadingDialog::LoadingDialog( QWidget* p )
   : QDialog( p , Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint )
