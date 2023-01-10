@@ -245,8 +245,8 @@ void LoaderThread::loadH5Morphology( )
           }
           else
           {
-            std::cout << "WARNING! Parent of neurite " << id << " of neuron "
-                      << neuron.name << " is null!" << std::endl;
+            std::cout << "WARNING! Neurite " << id << " has no nodes!"
+                      << std::endl;
           }
         }
         else
