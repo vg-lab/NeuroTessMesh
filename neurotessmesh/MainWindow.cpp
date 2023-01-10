@@ -236,7 +236,8 @@ void MainWindow::updateNeuronList( )
 
   for ( const auto& id: ids )
   {
-    _neuronList->addItem( QString::number( id ));
+    auto item = new NeuronListItem(id);
+    _neuronList->addItem(item);
   }
 }
 
@@ -793,6 +794,8 @@ void MainWindow::addCameraPosition( )
                                   QLineEdit::Normal , tr( "New position" ) ,
                                   &ok );
 
+    if(!ok) return;
+
     if ( ok && !name.isEmpty( ))
     {
       QString tempName( name );
@@ -931,6 +934,7 @@ void MainWindow::_initExtractionDock( )
   _meshDockLayout->addWidget( _neuronsGroup );
 
   _neuronList = new QListWidget( );
+  _neuronList->setSortingEnabled(true);
   _neuronsLayout->addWidget( new QLabel( QString( "Neurons" )));
   _neuronsLayout->addWidget( _neuronList );
 

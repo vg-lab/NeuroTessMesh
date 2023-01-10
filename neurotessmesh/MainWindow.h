@@ -187,3 +187,25 @@ private:
   Recorder* _recorder;
   std::shared_ptr< neurotessmesh::LoaderThread > m_dataLoader;
 };
+
+/** \brief List item to sort neuron list correctly.
+ *
+ */
+class NeuronListItem: public QListWidgetItem
+{
+  public:
+    explicit NeuronListItem(uint32_t id)
+    : QListWidgetItem(QString::number(id))
+    , m_id{id}
+    {}
+
+    virtual ~NeuronListItem() {};
+
+    bool operator <(const QListWidgetItem &other) const override
+    {
+      return this->m_id < static_cast<const NeuronListItem&>(other).m_id;
+    }
+
+    uint32_t m_id;
+};
+
