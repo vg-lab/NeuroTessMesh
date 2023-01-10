@@ -150,6 +150,7 @@ void LoaderThread::run( )
   }
 }
 
+#ifdef NEUROTESSMESH_USE_SIMIL
 uint8_t LoaderThread::getTypeFromLoaderType( const NeuronType& type )
 {
   switch ( type )
@@ -167,8 +168,6 @@ uint8_t LoaderThread::getTypeFromLoaderType( const NeuronType& type )
   }
   return nsol::Neuron::UNDEFINED;
 }
-
-#ifdef NEUROTESSMESH_USE_SIMIL
 
 void LoaderThread::loadH5Morphology( )
 {
