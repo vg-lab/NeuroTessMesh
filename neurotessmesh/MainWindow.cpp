@@ -23,9 +23,12 @@
 #endif
 
 #include <acuterecorder/acuterecorder.h>
+
 #ifdef NEUROTESSMESH_USE_SIMIL
-  #include <qsimil/qsimil.h>
-  #include <simil/simil.h>
+
+#include <qsimil/qsimil.h>
+#include <simil/simil.h>
+
 #endif
 
 #include <QFileDialog>
@@ -57,7 +60,7 @@ MainWindow::MainWindow( QWidget* parent_ , bool updateOnIdle_ )
   _ui->toolBar->addAction( recorderAction );
 
   connect( recorderAction , SIGNAL( triggered( bool )) ,
-           this , SLOT( openRecorder( )));
+           this , SLOT( openRecorder( )) );
 
   _ui->actionUpdateOnIdle->setChecked( updateOnIdle_ );
   _ui->actionShowFPSOnIdleUpdate->setChecked( false );
@@ -75,10 +78,10 @@ MainWindow::MainWindow( QWidget* parent_ , bool updateOnIdle_ )
 #endif
 
   connect( _ui->actionQuit , SIGNAL( triggered( )) ,
-           QApplication::instance( ) , SLOT( quit( )));
+           QApplication::instance( ) , SLOT( quit( )) );
 
   connect( _ui->actionAbout , SIGNAL( triggered( )) ,
-           this , SLOT( showAbout( )));
+           this , SLOT( showAbout( )) );
 
   _openGLWidget = new OpenGLWidget( );
   this->setCentralWidget( _openGLWidget );
@@ -114,78 +117,86 @@ void MainWindow::init( const std::string& zeqSession_ )
     _openGLWidget->setZeqSession( zeqSession_ );
 
   connect( _ui->actionHome , SIGNAL( triggered( )) ,
-           this , SLOT( home( )));
+           this , SLOT( home( )) );
 
   connect( _ui->actionUpdateOnIdle , SIGNAL( triggered( )) ,
-           _openGLWidget , SLOT( toggleUpdateOnIdle( )));
+           _openGLWidget , SLOT( toggleUpdateOnIdle( )) );
 
   connect( _ui->actionShowFPSOnIdleUpdate , SIGNAL( triggered( )) ,
-           _openGLWidget , SLOT( toggleShowFPS( )));
+           _openGLWidget , SLOT( toggleShowFPS( )) );
 
   connect( _ui->actionWireframe , SIGNAL( triggered( )) ,
-           _openGLWidget , SLOT( toggleWireframe( )));
+           _openGLWidget , SLOT( toggleWireframe( )) );
 
   connect( _ui->actionOpenBlueConfig , SIGNAL( triggered( )) ,
-           this , SLOT( openBlueConfigThroughDialog( )));
+           this , SLOT( openBlueConfigThroughDialog( )) );
 
   connect( _ui->actionOpenXMLScene , SIGNAL( triggered( )) ,
-           this , SLOT( openXMLSceneThroughDialog( )));
+           this , SLOT( openXMLSceneThroughDialog( )) );
 
   connect( _ui->actionOpenSWCFile , SIGNAL( triggered( )) ,
-           this , SLOT( openSWCFileThroughDialog( )));
+           this , SLOT( openSWCFileThroughDialog( )) );
+
+  connect( _ui->actionOpenHDF5File , SIGNAL( triggered( )) ,
+           this , SLOT( openHDF5FileThroughDialog( )) );
 
   connect( _radiusSlider , SIGNAL( valueChanged( int )) ,
-           this , SLOT( onActionGenerate( int )));
+           this , SLOT( onActionGenerate( int )) );
 
   connect( _extractButton , SIGNAL( clicked( )) ,
-           _openGLWidget , SLOT( extractEditNeuronMesh( )));
+           _openGLWidget , SLOT( extractEditNeuronMesh( )) );
 
   connect( _lotSlider , SIGNAL( valueChanged( int )) ,
-           _openGLWidget , SLOT( onLotValueChanged( int )));
+           _openGLWidget , SLOT( onLotValueChanged( int )) );
   _lotSlider->valueChanged( _lotSlider->value( ));
 
   connect( _distanceSlider , SIGNAL( valueChanged( int )) ,
-           _openGLWidget , SLOT( onDistanceValueChanged( int )));
+           _openGLWidget , SLOT( onDistanceValueChanged( int )) );
   _distanceSlider->valueChanged( _distanceSlider->value( ));
 
   connect( _radioHomogeneous , SIGNAL( clicked( )) ,
-           _openGLWidget , SLOT( onHomogeneousClicked( )));
+           _openGLWidget , SLOT( onHomogeneousClicked( )) );
 
   connect( _radioLinear , SIGNAL( clicked( )) ,
-           _openGLWidget , SLOT( onLinearClicked( )));
+           _openGLWidget , SLOT( onLinearClicked( )) );
   _radioLinear->clicked( );
 
   connect( _neuronRender , SIGNAL( currentIndexChanged( int )) ,
-           _openGLWidget , SLOT( changeNeuronPiece( int )));
+           _openGLWidget , SLOT( changeNeuronPiece( int )) );
   _neuronRender->currentIndexChanged( 1 );
 
   connect( _selectedNeuronRender , SIGNAL( currentIndexChanged( int )) ,
-           _openGLWidget , SLOT( changeSelectedNeuronPiece( int )));
+           _openGLWidget , SLOT( changeSelectedNeuronPiece( int )) );
   _selectedNeuronRender->currentIndexChanged( 0 );
 
   connect( _ui->actionLoad_camera_positions , SIGNAL( triggered( bool )) ,
            this ,
-           SLOT( loadCameraPositions( )));
+           SLOT( loadCameraPositions( )) );
 
   connect( _ui->actionSave_camera_positions , SIGNAL( triggered( bool )) ,
            this ,
-           SLOT( saveCameraPositions( )));
+           SLOT( saveCameraPositions( )) );
 
   connect( _ui->actionAdd_camera_position , SIGNAL( triggered( bool )) , this ,
-           SLOT( addCameraPosition( )));
+           SLOT( addCameraPosition( )) );
 
   connect( _ui->actionRemove_camera_position , SIGNAL( triggered( bool )) ,
            this ,
-           SLOT( removeCameraPosition( )));
+           SLOT( removeCameraPosition( )) );
 
   connect( _backGroundColor , SIGNAL( colorChanged( QColor )) ,
-           _openGLWidget , SLOT( changeClearColor( QColor )));
+           _openGLWidget , SLOT( changeClearColor( QColor )) );
 
   connect( _neuronColor , SIGNAL( colorChanged( QColor )) ,
-           _openGLWidget , SLOT( changeNeuronColor( QColor )));
+           _openGLWidget , SLOT( changeNeuronColor( QColor )) );
 
   connect( _selectedNeuronColor , SIGNAL( colorChanged( QColor )) ,
-           _openGLWidget , SLOT( changeSelectedNeuronColor( QColor )));
+           _openGLWidget , SLOT( changeSelectedNeuronColor( QColor )) );
+
+
+#ifndef NEUROTESSMESH_USE_SIMIL
+  _ui->actionOpenHDF5File->setEnabled( false );
+#endif
 }
 
 void MainWindow::showStatusBarMessage( const QString& message )
@@ -212,6 +223,12 @@ void MainWindow::openSWCFile( const std::string& fileName )
             neurotessmesh::LoaderThread::DataFileType::SWC );
 }
 
+void MainWindow::openHDF5File( const std::string& fileName )
+{
+  loadData( fileName , std::string( ) ,
+            neurotessmesh::LoaderThread::DataFileType::HDF5 );
+}
+
 void MainWindow::updateNeuronList( )
 {
   _neuronList->clear( );
@@ -219,7 +236,8 @@ void MainWindow::updateNeuronList( )
 
   for ( const auto& id: ids )
   {
-    _neuronList->addItem( QString::number( id ));
+    auto item = new NeuronListItem(id);
+    _neuronList->addItem(item);
   }
 }
 
@@ -237,23 +255,23 @@ void MainWindow::openBlueConfigThroughDialog( )
 #ifdef NSOL_USE_BRION
 
   QString path = QFileDialog::getOpenFileName(
-    this, tr( "Open BlueConfig" ), _lastOpenedFileName,
-    tr( "BlueConfig ( BlueConfig CircuitConfig);; All files (*)" ),
-    nullptr, QFileDialog::DontUseNativeDialog );
+    this , tr( "Open BlueConfig" ) , _lastOpenedFileName ,
+    tr( "BlueConfig ( BlueConfig CircuitConfig);; All files (*)" ) ,
+    nullptr , QFileDialog::DontUseNativeDialog );
 
-  if (path != QString( "" ))
+  if ( path != QString( "" ))
   {
     bool ok;
     QString text = QInputDialog::getText(
-      this, tr( "Please select target" ),
-      tr( "Cell target:" ), QLineEdit::Normal,
-      "Column", &ok );
+      this , tr( "Please select target" ) ,
+      tr( "Cell target:" ) , QLineEdit::Normal ,
+      "Column" , &ok );
     if ( ok && !text.isEmpty( ))
     {
       std::string targetLabel = text.toStdString( );
-      _lastOpenedFileName = QFileInfo(path).path( );
+      _lastOpenedFileName = QFileInfo( path ).path( );
       std::string fileName = path.toStdString( );
-      openBlueConfig( fileName, targetLabel );
+      openBlueConfig( fileName , targetLabel );
     }
   }
 #endif
@@ -290,6 +308,20 @@ void MainWindow::openSWCFileThroughDialog( )
   }
 }
 
+void MainWindow::openHDF5FileThroughDialog( )
+{
+  QString path = QFileDialog::getOpenFileName(
+    this , tr( "Open HD5 File" ) , _lastOpenedFileName ,
+    tr( "hdf5 ( *.hdf5);; All files (*)" ) , nullptr ,
+    QFileDialog::DontUseNativeDialog );
+
+  if ( path != QString( "" ))
+  {
+    std::string fileName = path.toStdString( );
+    openHDF5File( fileName );
+  }
+}
+
 void MainWindow::showAbout( )
 {
 
@@ -314,7 +346,7 @@ void MainWindow::showAbout( )
     tr( " (" ) +
     tr( std::to_string( brion::Version::getRevision( )).c_str( )) +
     tr( ")" ) +
-    tr ( "</li> " ) +
+    tr( "</li> " ) +
     #endif
     #ifdef NEUROLOTS_USE_ZEROEQ
     tr( "<li>ZEQ " ) +
@@ -394,9 +426,9 @@ void MainWindow::openRecorder( )
   {
     _recorder = dialog.getRecorder( );
     connect( _recorder , SIGNAL( finished( )) ,
-             _recorder , SLOT( deleteLater( )));
+             _recorder , SLOT( deleteLater( )) );
     connect( _recorder , SIGNAL( finished( )) ,
-             this , SLOT( finishRecording( )));
+             this , SLOT( finishRecording( )) );
     if ( action ) action->setChecked( true );
   }
   else
@@ -622,7 +654,7 @@ void MainWindow::loadCameraPositions( )
                          position + ";" + radius + ";" + rotation );
 
     connect( action , SIGNAL( triggered( bool )) ,
-             this , SLOT( applyCameraPosition( )));
+             this , SLOT( applyCameraPosition( )) );
 
     _ui->actionCamera_Positions->menu( )->addAction( action );
   };
@@ -762,6 +794,8 @@ void MainWindow::addCameraPosition( )
                                   QLineEdit::Normal , tr( "New position" ) ,
                                   &ok );
 
+    if(!ok) return;
+
     if ( ok && !name.isEmpty( ))
     {
       QString tempName( name );
@@ -782,7 +816,7 @@ void MainWindow::addCameraPosition( )
   action->setProperty( POSITION_KEY , position.toString( ));
 
   connect( action , SIGNAL( triggered( bool )) ,
-           this , SLOT( applyCameraPosition( )));
+           this , SLOT( applyCameraPosition( )) );
   _ui->actionCamera_Positions->menu( )->addAction( action );
   _ui->actionCamera_Positions->setEnabled( true );
   _ui->actionSave_camera_positions->setEnabled( true );
@@ -838,7 +872,7 @@ void MainWindow::_generateNeuritesLayout( )
 
   _neuriteSliders.clear( );
 
-  QLayoutItem * child;
+  QLayoutItem* child;
   while (( child = _neuritesLayout->takeAt( 0 )) != 0 )
   {
     delete child->widget( );
@@ -865,7 +899,7 @@ void MainWindow::_generateNeuritesLayout( )
     _neuritesLayout->addWidget( _neuriteSlider );
     _neuriteSliders.push_back( _neuriteSlider );
     connect( _neuriteSlider , SIGNAL( valueChanged( int )) ,
-             this , SLOT( onActionGenerate( int )));
+             this , SLOT( onActionGenerate( int )) );
   }
   _radiusSlider->setValue( 100 );
 }
@@ -900,6 +934,7 @@ void MainWindow::_initExtractionDock( )
   _meshDockLayout->addWidget( _neuronsGroup );
 
   _neuronList = new QListWidget( );
+  _neuronList->setSortingEnabled(true);
   _neuronsLayout->addWidget( new QLabel( QString( "Neurons" )));
   _neuronsLayout->addWidget( _neuronList );
 
@@ -941,13 +976,13 @@ void MainWindow::_initExtractionDock( )
   _meshDockLayout->addWidget( _extractButton );
 
   connect( _neuronList , SIGNAL( itemClicked( QListWidgetItem * )) ,
-           this , SLOT( onListClicked( QListWidgetItem * )));
+           this , SLOT( onListClicked( QListWidgetItem * )) );
 
   connect( _extractMeshDock->toggleViewAction( ) , SIGNAL( toggled( bool )) ,
-           _ui->actionEditSave , SLOT( setChecked( bool )));
+           _ui->actionEditSave , SLOT( setChecked( bool )) );
 
   connect( _ui->actionEditSave , SIGNAL( triggered( )) ,
-           this , SLOT( updateExtractMeshDock( )));
+           this , SLOT( updateExtractMeshDock( )) );
 
 }
 
@@ -1017,13 +1052,13 @@ void MainWindow::_initConfigurationDock( )
   _radioLinear->setChecked( true );
 
   connect( _radioLinear , SIGNAL( toggled( bool )) ,
-           _distanceSlider , SLOT( setEnabled( bool )));
+           _distanceSlider , SLOT( setEnabled( bool )) );
 
   connect( _configurationDock->toggleViewAction( ) , SIGNAL( toggled( bool )) ,
-           _ui->actionConfiguration , SLOT( setChecked( bool )));
+           _ui->actionConfiguration , SLOT( setChecked( bool )) );
 
   connect( _ui->actionConfiguration , SIGNAL( triggered( )) ,
-           this , SLOT( updateConfigurationDock( )));
+           this , SLOT( updateConfigurationDock( )) );
 }
 
 void MainWindow::_initRenderOptionsDock( )
@@ -1093,10 +1128,10 @@ void MainWindow::_initRenderOptionsDock( )
   _selectedNeuronRender->addItem( QString( "neurites" ));
 
   connect( _renderOptionsDock->toggleViewAction( ) , SIGNAL( toggled( bool )) ,
-           _ui->actionRenderOptions , SLOT( setChecked( bool )));
+           _ui->actionRenderOptions , SLOT( setChecked( bool )) );
 
   connect( _ui->actionRenderOptions , SIGNAL( triggered( )) ,
-           this , SLOT( updateRenderOptionsDock( )));
+           this , SLOT( updateRenderOptionsDock( )) );
 }
 
 void MainWindow::closeEvent( QCloseEvent* e )
@@ -1134,8 +1169,9 @@ void MainWindow::_initPlayerDock( )
   _playerDock->setFeatures( QDockWidget::DockWidgetClosable |
                             QDockWidget::DockWidgetMovable |
                             QDockWidget::DockWidgetFloatable );
-  _playerDock->setAllowedAreas(Qt::DockWidgetAreas::enum_type::BottomDockWidgetArea|
-                               Qt::DockWidgetAreas::enum_type::TopDockWidgetArea);
+  _playerDock->setAllowedAreas(
+    Qt::DockWidgetAreas::enum_type::BottomDockWidgetArea |
+    Qt::DockWidgetAreas::enum_type::TopDockWidgetArea );
   _playerDock->setWindowTitle( QString( "Player Options" ));
   _playerDock->show( );
   _playerDock->close( );
@@ -1145,13 +1181,13 @@ void MainWindow::_initPlayerDock( )
   _playerDock->setWidget( playerControls );
 
   connect( playerControls , SIGNAL( frame( )) ,
-           _openGLWidget , SLOT( update( )));
+           _openGLWidget , SLOT( update( )) );
 
   connect( _playerDock->toggleViewAction( ) , SIGNAL( toggled( bool )) ,
-           _ui->actionSimulation_player_options , SLOT( setChecked( bool )));
+           _ui->actionSimulation_player_options , SLOT( setChecked( bool )) );
 
   connect( _ui->actionSimulation_player_options , SIGNAL( triggered( )) ,
-           this , SLOT( updatePlayerOptionsDock( )));
+           this , SLOT( updatePlayerOptionsDock( )) );
 #endif
 }
 
@@ -1168,11 +1204,11 @@ void MainWindow::loadData( const std::string& arg1 , const std::string& arg2 ,
            this , SLOT( onDataLoaded( )) , Qt::QueuedConnection );
 
   connect( m_dataLoader.get( ) , SIGNAL( destroyed( QObject * )) ,
-           dialog , SLOT( closeDialog( )));
+           dialog , SLOT( closeDialog( )) );
 
   connect( m_dataLoader.get( ) ,
            SIGNAL( progress(const QString & , const unsigned int)) ,
-           dialog , SLOT( progress(const QString & , const unsigned int)));
+           dialog , SLOT( progress(const QString & , const unsigned int)) );
 
   dialog->show( );
 
@@ -1198,7 +1234,7 @@ void MainWindow::onDataLoaded( )
 
   try
   {
-    _openGLWidget->makeCurrent();
+    _openGLWidget->makeCurrent( );
     _openGLWidget->update( );
 
     _scene = std::make_shared< neurotessmesh::Scene >(
@@ -1206,7 +1242,7 @@ void MainWindow::onDataLoaded( )
 #ifdef NEUROTESSMESH_USE_SIMIL
       , m_dataLoader->getPlayer( )
 #endif
-      );
+    );
     _openGLWidget->setScene( _scene );
   }
   catch ( const std::exception& e )
@@ -1240,7 +1276,7 @@ void MainWindow::onDataLoaded( )
   {
 
     // disable hasta que hagamos el merge a master de SimIL
-    playerWidget->init( m_dataLoader->getPlayer( ));
+    //playerWidget->init( m_dataLoader->getPlayer( ));
   }
 #endif
 
