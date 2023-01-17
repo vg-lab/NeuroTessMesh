@@ -312,7 +312,7 @@ void MainWindow::openHDF5FileThroughDialog( )
 {
   QString path = QFileDialog::getOpenFileName(
     this , tr( "Open HD5 File" ) , _lastOpenedFileName ,
-    tr( "hdf5 ( *.hdf5);; All files (*)" ) , nullptr ,
+    tr( "hdf5 ( *.hdf5 *.h5);; All files (*)" ) , nullptr ,
     QFileDialog::DontUseNativeDialog );
 
   if ( path != QString( "" ))
@@ -345,6 +345,14 @@ void MainWindow::showAbout( )
     tr( brion::Version::getString( ).c_str( )) +
     tr( " (" ) +
     tr( std::to_string( brion::Version::getRevision( )).c_str( )) +
+    tr( ")" ) +
+    tr( "</li> " ) +
+    #endif
+    #ifdef NEUROTESSMESH_USE_SIMIL
+    tr( "<li>Simil " ) +
+    tr( simil::Version::getString( ).c_str( )) +
+    tr( " (" ) +
+    tr( std::to_string( simil::Version::getRevision( )).c_str( )) +
     tr( ")" ) +
     tr( "</li> " ) +
     #endif
