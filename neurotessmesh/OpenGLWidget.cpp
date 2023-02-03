@@ -455,27 +455,41 @@ void OpenGLWidget::mouseReleaseEvent( QMouseEvent* event_ )
 
 void OpenGLWidget::mouseMoveEvent( QMouseEvent* event_ )
 {
+  constexpr float TRANSLATION_FACTOR = 0.001f;
+  constexpr float ROTATION_FACTOR = 0.01f;
+
+  const auto diffX = static_cast<float>(event_->x( ) - _mouseX);
+  const auto diffY = static_cast<float>(event_->y( ) - _mouseY);
+
+  auto updateLastEventCoords = [ this ]( const QMouseEvent* e )
+  {
+    _mouseX = e->x( );
+    _mouseY = e->y( );
+  };
+
   if ( _rotation )
   {
     _camera->rotate(
-      Eigen::Vector3f{ -( _mouseX - event_->x( )) * _rotationScale ,
-                       -( _mouseY - event_->y( )) * _rotationScale ,
-                       0.f } );
+      Eigen::Vector3f(
+        diffX * ROTATION_FACTOR ,
+        diffY * ROTATION_FACTOR ,
+        0.0f
+      )
+    );
 
-    _mouseX = event_->x( );
-    _mouseY = event_->y( );
+    updateLastEventCoords( event_ );
   }
+
   if ( _translation )
   {
-    float xDis = ( event_->x( ) - _mouseX ) * _translationScale;
-    float yDis = ( event_->y( ) - _mouseY ) * _translationScale;
+    const float xDis = diffX * TRANSLATION_FACTOR * _camera->radius( );
+    const float yDis = diffY * TRANSLATION_FACTOR * _camera->radius( );
 
-    _camera->translate( Eigen::Vector3f( -xDis , yDis , 0.0f ));
-    _mouseX = event_->x( );
-    _mouseY = event_->y( );
+    _camera->localTranslate( Eigen::Vector3f( -xDis , yDis , 0.0f ));
+    updateLastEventCoords( event_ );
   }
 
-  this->update( );
+  update( );
 }
 
 void OpenGLWidget::wheelEvent( QWheelEvent* event_ )
