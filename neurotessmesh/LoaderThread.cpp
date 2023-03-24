@@ -23,6 +23,7 @@
 #include "LoaderThread.h"
 
 // deps
+#include <memory>
 #include <nsol/nsol.h>
 
 #ifdef NEUROTESSMESH_USE_SIMIL
@@ -94,9 +95,11 @@ void LoaderThread::run( )
         emit progress( tr( "Loading Spikes" ) , 75 );
 #ifdef NEUROTESSMESH_USE_SIMIL
         { // load the spikes data with SimIL, only for blueconfig.
-          auto spikesData = new simil::SpikeData( m_fileName ,
-                                                  simil::TDataType::TBlueConfig ,
-                                                  m_target );
+          auto spikesData = std::make_shared< simil::SpikeData >(
+            m_fileName ,
+            simil::TDataType::TBlueConfig ,
+            m_target
+          );
           spikesData->reduceDataToGIDS( );
 
           m_player = new simil::SpikesPlayer( );
@@ -151,6 +154,7 @@ void LoaderThread::run( )
 }
 
 #ifdef NEUROTESSMESH_USE_SIMIL
+
 uint8_t LoaderThread::getTypeFromLoaderType( const NeuronType& type )
 {
   switch ( type )
@@ -266,14 +270,15 @@ void LoaderThread::loadH5Morphology( )
   {
     auto morphology = morphologiesByType[ neuron.type ];
 
-    Eigen::Affine3f transform(Eigen::Translation3f(neuron.x, neuron.y, neuron.z));
+    Eigen::Affine3f transform(
+      Eigen::Translation3f( neuron.x , neuron.y , neuron.z ));
 
 
     auto* result = new nsol::Neuron(
       morphology ,
       0 ,
       neuronId++ ,
-      transform.matrix(),
+      transform.matrix( ) ,
       nullptr ,
       static_cast<nsol::Neuron::TMorphologicalType>(
         getTypeFromLoaderType( neuron.type )) ,
