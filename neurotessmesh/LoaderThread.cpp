@@ -22,16 +22,16 @@
 
 #include "LoaderThread.h"
 
-// deps
+// NSOL
 #include <memory>
 #include <nsol/nsol.h>
 
+// SimIL
 #ifdef NEUROTESSMESH_USE_SIMIL
-
 #include <simil/simil.h>
-
 #endif
 
+// Eigen
 #include <Eigen/Geometry>
 #include <Eigen/Eigen>
 
@@ -41,6 +41,9 @@
 #include <QVBoxLayout>
 #include <QProgressBar>
 #include <QIcon>
+
+// C++
+#include <memory>
 
 using namespace neurotessmesh;
 
