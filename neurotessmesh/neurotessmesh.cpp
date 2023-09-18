@@ -4,7 +4,7 @@
  * @author  Juan José García <juanjose.garcia@urjc.es>,
  * Pablo Toharia <pablo.toharia@urjc.es>
  * @date    2015
- * @remarks Copyright (c) 2015 GMRV/URJC. All rights reserved.
+ * @remarks Copyright (c) 2015 VG-Lab/URJC. All rights reserved.
  * Do not distribute without further notice.
  */
 

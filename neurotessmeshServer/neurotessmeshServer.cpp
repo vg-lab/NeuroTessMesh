@@ -131,7 +131,7 @@ int main( int argc, char** argv )
         std::to_string( neurotessmeshServer::Version::getMajor( )) + "." +
         std::to_string( neurotessmeshServer::Version::getMinor( )) + "." +
         std::to_string( neurotessmeshServer::Version::getPatch( )) +
-        " application from the GMRV/URJC \n"
+        " application from the VG-Lab/URJC \n"
         "#Contact: juanjose.garcia@urjc.es\n"
         "#Generated from: " + originalFile + "\n"
         "#Level of subdivision applied: " + std::to_string( lod ) );
