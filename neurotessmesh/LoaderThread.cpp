@@ -172,6 +172,8 @@ uint8_t LoaderThread::getTypeFromLoaderType( const NeuronType& type )
       return nsol::Neuron::STELLATE;
     case NeuronType::BASKET_CELL:
       return nsol::Neuron::BASKET;
+    default:
+      break;
   }
   return nsol::Neuron::UNDEFINED;
 }
@@ -295,7 +297,7 @@ void LoaderThread::loadH5Morphology( )
 #endif
 
 LoadingDialog::LoadingDialog( QWidget* p )
-  : QDialog( p , Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint )
+: QDialog( p , Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint )
 {
   setWindowIcon( QIcon( ":/icons/rsc/neurotessmesh.png" ));
 
@@ -310,7 +312,7 @@ LoadingDialog::LoadingDialog( QWidget* p )
 
   setSizePolicy( QSizePolicy::MinimumExpanding ,
                  QSizePolicy::MinimumExpanding );
-  setFixedSize( 600 , sizeHint( ).height( ));
+  setFixedSize( 600 , sizeHint().height( ));
 }
 
 void
