@@ -94,6 +94,12 @@ namespace neurotessmesh
     QString errors( ) const
     { return m_errors; }
 
+    /** \brief Returns the loaded filename.
+     *
+     */
+    std::string filename() const
+    { return m_fileName; }
+
   signals:
 
     void progress( const QString& text , const unsigned int value );
