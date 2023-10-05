@@ -2,9 +2,9 @@
  * @file    OpenGLWidget.cpp
  * @brief
  * @author  Juan José García <juanjose.garcia@urjc.es>,
- * Pablo Toharia <pablo.toharia@urjc.es>
+ *          Pablo Toharia <pablo.toharia@urjc.es>
  * @date    2015
- * @remarks Copyright (c) 2015 GMRV/URJC. All rights reserved.
+ * @remarks Copyright (c) 2015 VG-Lab/URJC. All rights reserved.
  * Do not distribute without further notice.
  */
 
@@ -24,6 +24,7 @@
 #include <string>
 #include <iostream>
 #include <utility>
+#include <chrono>
 
 #include <nlrender/nlrender.h>
 
@@ -32,6 +33,8 @@ const QString FPSLABEL_STYLESHEET = "QLabel { background-color : #333;"
                                     "padding: 3px;"
                                     "margin: 10px;"
                                     "border-radius: 10px;}";
+
+const float FRAME_TIME = 1.f/60.f;
 
 OpenGLWidget::OpenGLWidget( QWidget* parent_ ,
                             Qt::WindowFlags windowsFlags_ )
@@ -63,10 +66,10 @@ OpenGLWidget::OpenGLWidget( QWidget* parent_ ,
                                                  reto::Camera::NO_ZEROEQ );
   }
 
-  _cameraTimer = new QTimer( );
-  _cameraTimer->start(( 1.0f / 60.f ) * 100 );
-  connect( _cameraTimer , SIGNAL( timeout( )) , this , SLOT( timerUpdate( )));
-  _fpsLabel.setStyleSheet( FPSLABEL_STYLESHEET );
+  _cameraTimer = new QTimer();
+  _cameraTimer->start(FRAME_TIME * 100);
+  connect(_cameraTimer, SIGNAL(timeout( )), this, SLOT(timerUpdate()));
+  _fpsLabel.setStyleSheet(FPSLABEL_STYLESHEET);
 
   // This is needed to get key events
   this->setFocusPolicy( Qt::WheelFocus );
@@ -115,8 +118,7 @@ void OpenGLWidget::setZeqSession( const std::string&
     }
     catch (...)
     {
-      _camera = new reto::OrbitalCameraController(nullptr,
-          reto::Camera::NO_ZEROEQ);
+      _camera = new reto::OrbitalCameraController(nullptr, reto::Camera::NO_ZEROEQ);
     }
 
     if (_subscriberThread)
@@ -174,63 +176,82 @@ void OpenGLWidget::setZeqSession( const std::string&
 
 #endif
 
-reto::OrbitalCameraController* OpenGLWidget::getCamera( ) const
+reto::OrbitalCameraController* OpenGLWidget::getCamera() const
 {
   return _camera;
 }
 
-CameraPosition OpenGLWidget::cameraPosition( ) const
+CameraPosition OpenGLWidget::cameraPosition() const
 {
   CameraPosition pos;
-  pos.position = _camera->position( );
-  pos.radius = _camera->radius( );
-  pos.rotation = _camera->rotation( );
+  pos.position = _camera->position();
+  pos.radius = _camera->radius();
+  pos.rotation = _camera->rotation();
 
   return pos;
 }
 
-void OpenGLWidget::toggleUpdateOnIdle( )
+void OpenGLWidget::toggleUpdateOnIdle()
 {
   _idleUpdate = !_idleUpdate;
-  if ( _idleUpdate )
-    update( );
+  if (_idleUpdate) update();
 }
 
-void OpenGLWidget::toggleShowFPS( )
+void OpenGLWidget::toggleShowFPS()
 {
   _showFps = !_showFps;
-  if ( _idleUpdate )
-    update( );
+  if (_idleUpdate) update();
 }
 
-void OpenGLWidget::toggleWireframe( )
+void OpenGLWidget::toggleWireframe()
 {
-  makeCurrent( );
+  makeCurrent();
   _wireframe = !_wireframe;
 
-  if ( _wireframe )
+  if (_wireframe)
   {
-    glEnable( GL_POLYGON_OFFSET_LINE );
-    glPolygonOffset( -1 , -1 );
-    glLineWidth( 1.5 );
-    glPolygonMode( GL_FRONT_AND_BACK , GL_LINE );
+    glEnable(GL_POLYGON_OFFSET_LINE);
+    glPolygonOffset(-1, -1);
+    glLineWidth(1.5);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   }
   else
   {
-    glPolygonMode( GL_FRONT_AND_BACK , GL_FILL );
-    glDisable( GL_POLYGON_OFFSET_LINE );
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glDisable(GL_POLYGON_OFFSET_LINE);
   }
 
-  update( );
+  update();
 }
 
-void OpenGLWidget::timerUpdate( )
+void OpenGLWidget::timerUpdate()
 {
-  if ( _camera->isAniming( ))
+  static std::chrono::system_clock::time_point lastFrame;
+
+  if (_camera->isAniming())
   {
-    _camera->anim( );
-    this->update( );
+    const auto nowTime = std::chrono::system_clock::now();
+
+    if(lastFrame == std::chrono::system_clock::time_point())
+    {
+      _camera->anim();
+    }
+    else
+    {
+      const std::chrono::duration<float> elapsed = (nowTime - lastFrame);
+      const auto elapsedF = elapsed.count();
+      const float ratio = elapsedF/FRAME_TIME;
+      _camera->anim( ratio <= 1.f ? FRAME_TIME : elapsedF);
+    }
+
+    lastFrame = nowTime;
   }
+  else
+  {
+    lastFrame = std::chrono::system_clock::time_point();
+  }
+
+  this->update();
 }
 
 void OpenGLWidget::extractEditNeuronMesh( )
@@ -243,13 +264,13 @@ void OpenGLWidget::extractEditNeuronMesh( )
                     _lastSavedFileName , filter );
 
     fd.setOption( QFileDialog::DontUseNativeDialog , true );
-    fd.setDefaultSuffix( "obj" );
+    fd.setDefaultSuffix("obj");
     fd.setFileMode( QFileDialog/*::FileMode*/::AnyFile );
     fd.setAcceptMode( QFileDialog/*::AcceptMode*/::AcceptSave );
     if ( fd.exec( ))
-      path = fd.selectedFiles( )[ 0 ];
+      path = fd.selectedFiles()[0];
 
-    if ( !path.isEmpty( ))
+    if (!path.isEmpty())
     {
       _lastSavedFileName = QFileInfo( path ).path( );
       this->makeCurrent( );
@@ -259,39 +280,39 @@ void OpenGLWidget::extractEditNeuronMesh( )
   }
 }
 
-void OpenGLWidget::onLotValueChanged( int value_ )
+void OpenGLWidget::onLotValueChanged(int value_)
 {
-  if ( _scene )
+  if (_scene)
   {
-    _scene->levelOfDetail( static_cast<float>(value_) * 0.1f );
-    update( );
+    _scene->levelOfDetail(static_cast<float>(value_) * 0.1f);
+    update();
   }
 }
 
-void OpenGLWidget::onDistanceValueChanged( int value_ )
+void OpenGLWidget::onDistanceValueChanged(int value_)
 {
-  if ( _scene )
+  if (_scene)
   {
-    _scene->maximumDistance( static_cast<float>(value_) / 1000.0f );
-    update( );
+    _scene->maximumDistance(static_cast<float>(value_) / 1000.0f);
+    update();
   }
 }
 
-void OpenGLWidget::onHomogeneousClicked( )
+void OpenGLWidget::onHomogeneousClicked()
 {
-  if ( _scene )
+  if (_scene)
   {
-    _scene->subdivisionCriteria( nlrender::Renderer::HOMOGENEOUS );
-    update( );
+    _scene->subdivisionCriteria(nlrender::Renderer::HOMOGENEOUS);
+    update();
   }
 }
 
-void OpenGLWidget::onLinearClicked( )
+void OpenGLWidget::onLinearClicked()
 {
-  if ( _scene )
+  if (_scene)
   {
-    _scene->subdivisionCriteria( nlrender::Renderer::LINEAR );
-    update( );
+    _scene->subdivisionCriteria(nlrender::Renderer::LINEAR);
+    update();
   }
 }
 
@@ -365,16 +386,16 @@ void OpenGLWidget::initializeGL( )
 
 void OpenGLWidget::paintGL( )
 {
-  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+  glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-  if ( _scene != nullptr )
+  if (_scene != nullptr)
   {
     _scene->update();
-    _scene->render( );
+    _scene->render();
   }
 
-  glUseProgram( 0 );
-  glFlush( );
+  glUseProgram(0);
+  glFlush();
 
 #define FRAMES_PAINTED_TO_MEASURE_FPS 10
   if ( _frameCount % FRAMES_PAINTED_TO_MEASURE_FPS == 0 )
@@ -396,58 +417,58 @@ void OpenGLWidget::paintGL( )
         static_cast<float>( ellapsedMiliseconds ))
       );
 
-      if ( _showFps )
+      if (_showFps)
       {
-        _fpsLabel.setVisible( true );
-        _fpsLabel.setText( QString::number( fps ) + QString( " FPS" ));
-        _fpsLabel.adjustSize( );
+        _fpsLabel.setVisible(true);
+        _fpsLabel.setText(QString::number(fps) + QString(" FPS"));
+        _fpsLabel.adjustSize();
       }
       else
-        _fpsLabel.setVisible( false );
+        _fpsLabel.setVisible(false);
     }
   }
 
-  if ( _idleUpdate )
+  if (_idleUpdate)
   {
-    update( );
+    update();
   }
   else
   {
-    _fpsLabel.setVisible( false );
+    _fpsLabel.setVisible(false);
   }
 }
 
 void OpenGLWidget::resizeGL( int width_ , int height_ )
 {
-  _camera->windowSize( width_ , height_ );
-  glViewport( 0 , 0 , width_ , height_ );
+  _camera->windowSize(width_, height_);
+  glViewport(0, 0, width_, height_);
 }
 
 void OpenGLWidget::mousePressEvent( QMouseEvent* event_ )
 {
-  if ( event_->button( ) == Qt::LeftButton )
+  if (event_->button() == Qt::LeftButton)
   {
     _rotation = true;
-    _mouseX = event_->x( );
-    _mouseY = event_->y( );
+    _mouseX = event_->x();
+    _mouseY = event_->y();
   }
 
-  if ( event_->button( ) == Qt::MidButton )
+  if (event_->button() == Qt::MidButton)
   {
     _translation = true;
-    _mouseX = event_->x( );
-    _mouseY = event_->y( );
+    _mouseX = event_->x();
+    _mouseY = event_->y();
   }
 }
 
 void OpenGLWidget::mouseReleaseEvent( QMouseEvent* event_ )
 {
-  if ( event_->button( ) == Qt::LeftButton )
+  if (event_->button() == Qt::LeftButton)
   {
     _rotation = false;
   }
 
-  if ( event_->button( ) == Qt::MidButton )
+  if (event_->button() == Qt::MidButton)
   {
     _translation = false;
   }
@@ -467,41 +488,35 @@ void OpenGLWidget::mouseMoveEvent( QMouseEvent* event_ )
     _mouseY = e->y( );
   };
 
-  if ( _rotation )
+  if (_rotation)
   {
-    _camera->rotate(
-      Eigen::Vector3f(
-        diffX * ROTATION_FACTOR ,
-        diffY * ROTATION_FACTOR ,
-        0.0f
-      )
-    );
+    _camera->rotate(Eigen::Vector3f(diffX * ROTATION_FACTOR, diffY * ROTATION_FACTOR, 0.0f));
 
-    updateLastEventCoords( event_ );
+    updateLastEventCoords(event_);
   }
 
-  if ( _translation )
+  if (_translation)
   {
-    const float xDis = diffX * TRANSLATION_FACTOR * _camera->radius( );
-    const float yDis = diffY * TRANSLATION_FACTOR * _camera->radius( );
+    const float xDis = diffX * TRANSLATION_FACTOR * _camera->radius();
+    const float yDis = diffY * TRANSLATION_FACTOR * _camera->radius();
 
-    _camera->localTranslate( Eigen::Vector3f( -xDis , yDis , 0.0f ));
-    updateLastEventCoords( event_ );
+    _camera->localTranslate(Eigen::Vector3f(-xDis, yDis, 0.0f));
+    updateLastEventCoords(event_);
   }
 
-  update( );
+  update();
 }
 
 void OpenGLWidget::wheelEvent( QWheelEvent* event_ )
 {
-  int delta = event_->angleDelta( ).y( );
+  int delta = event_->angleDelta().y();
 
-  if ( delta > 0 )
-    _camera->radius( _camera->radius( ) / 1.1f );
+  if (delta > 0)
+    _camera->radius(_camera->radius() / 1.1f);
   else
-    _camera->radius( _camera->radius( ) * 1.1f );
+    _camera->radius(_camera->radius() * 1.1f);
 
-  update( );
+  update();
 }
 
 void OpenGLWidget::keyPressEvent( QKeyEvent* event_ )
@@ -526,17 +541,12 @@ void OpenGLWidget::changeClearColor( QColor qColor )
   update( );
 }
 
-void OpenGLWidget::changeNeuronColor( QColor qColor )
+void OpenGLWidget::changeNeuronColor(const int type, const QColor &qColor )
 {
-  _scene->unselectedNeuronColor( qColor );
+  _scene->setColor(type, Eigen::Vector3f(qColor.redF(), qColor.greenF(), qColor.blueF()));
   update( );
 }
 
-void OpenGLWidget::changeSelectedNeuronColor( QColor qColor )
-{
-  _scene->selectedNeuronColor( qColor );
-  update( );
-}
 
 #ifdef NEUROTESSMESH_USE_LEXIS
 void OpenGLWidget::_onSelectionEvent(

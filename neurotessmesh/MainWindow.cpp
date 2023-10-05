@@ -33,6 +33,7 @@
 
 #include <QFileDialog>
 #include <QInputDialog>
+#include <QInputDialog>
 #include <QMessageBox>
 #include <QScrollArea>
 #include <QGridLayout>
@@ -40,6 +41,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QStandardItemModel>
+#include <QDir>
 
 constexpr const char* POSITION_KEY = "positionData";
 
@@ -165,9 +168,10 @@ void MainWindow::init( const std::string& zeqSession_ )
            _openGLWidget , SLOT( changeNeuronPiece( int )) );
   _neuronRender->currentIndexChanged( 1 );
 
-  connect( _selectedNeuronRender , SIGNAL( currentIndexChanged( int )) ,
-           _openGLWidget , SLOT( changeSelectedNeuronPiece( int )) );
-  _selectedNeuronRender->currentIndexChanged( 0 );
+  // TODO: @felix rework selection
+//  connect( _selectedNeuronRender , SIGNAL( currentIndexChanged( int )) ,
+//           _openGLWidget , SLOT( changeSelectedNeuronPiece( int )) );
+//  _selectedNeuronRender->currentIndexChanged( 0 );
 
   connect( _ui->actionLoad_camera_positions , SIGNAL( triggered( bool )) ,
            this ,
@@ -186,13 +190,6 @@ void MainWindow::init( const std::string& zeqSession_ )
 
   connect( _backGroundColor , SIGNAL( colorChanged( QColor )) ,
            _openGLWidget , SLOT( changeClearColor( QColor )) );
-
-  connect( _neuronColor , SIGNAL( colorChanged( QColor )) ,
-           _openGLWidget , SLOT( changeNeuronColor( QColor )) );
-
-  connect( _selectedNeuronColor , SIGNAL( colorChanged( QColor )) ,
-           _openGLWidget , SLOT( changeSelectedNeuronColor( QColor )) );
-
 
 #ifndef NEUROTESSMESH_USE_SIMIL
   _ui->actionOpenHDF5File->setEnabled( false );
@@ -229,16 +226,67 @@ void MainWindow::openHDF5File( const std::string& fileName )
             neurotessmesh::LoaderThread::DataFileType::HDF5 );
 }
 
-void MainWindow::updateNeuronList( )
+std::set<int> MainWindow::updateNeuronList( )
 {
-  _neuronList->clear( );
-  const std::vector< unsigned int >& ids = _scene->neuronIndices( );
+  QApplication::setOverrideCursor(Qt::WaitCursor);
 
-  for ( const auto& id: ids )
+  std::set<int> usedColoringValues;
+
+  const auto currentIdx = _neuronList->currentRow();
+  _neuronList->clear( );
+
+  for ( const auto& n: _scene->neurons() )
   {
-    auto item = new NeuronListItem(id);
+    const auto type = n.second->morphologicalType();
+    const auto function = n.second->functionalType();
+    const auto layer = n.second->layer();
+    const auto id = n.first;
+
+    switch(_renderColoring->currentIndex())
+    {
+      case 1:
+        usedColoringValues.insert(static_cast<int>(type));
+        break;
+      case 2:
+        usedColoringValues.insert(layer);
+        break;
+      case 3:
+        usedColoringValues.insert(static_cast<int>(function));
+        break;
+      case 0: // No value returned in selection coloring mode.
+        /** pass-through **/
+      default:
+        break;
+    }
+
+
+    const auto color = _scene->neuronColor(id);
+    const auto qcolor = QColor::fromRgbF(color[0], color[1], color[2]);
+    auto itemText = QString::fromStdString(nsol::Neuron::typeToString(type));
+
+    if(_neuronAdditionalText->isChecked() && (function + layer > 0))
+    {
+      QString layerText, functionText, separator;
+      if(function > 0) functionText += QString::fromStdString(nsol::Neuron::functionToString(function));
+      if(layer > 0) layerText += QString("layer ") + QString::number(static_cast<unsigned int>(layer));
+      if(function > 0 && layer > 0) separator = ", ";
+
+      itemText += QString(" (%1%2%3)").arg(functionText).arg(separator).arg(layerText);
+    }
+
+    auto item = new NeuronListItem(id, itemText, qcolor);
+    item->setData(TEXT_ROLE, static_cast<int>(type));
+    item->setData(ID_ROLE, id);
+    item->setData(COLOR_ROLE, qcolor);
     _neuronList->addItem(item);
   }
+
+  if(currentIdx != -1)
+    _neuronList->setCurrentRow(currentIdx);
+
+  QApplication::restoreOverrideCursor();
+
+  return usedColoringValues;
 }
 
 void MainWindow::home( )
@@ -494,7 +542,10 @@ void MainWindow::updatePlayerOptionsDock( )
 
 void MainWindow::onListClicked( QListWidgetItem* item )
 {
-  int id = item->text( ).toInt( );
+  if(!item) return;
+
+  const unsigned int id = item->data(ID_ROLE).toUInt();
+
   _scene->setNeuronToEdit( id );
   _openGLWidget->update( );
   _generateNeuritesLayout( );
@@ -504,7 +555,7 @@ void MainWindow::onListClicked( QListWidgetItem* item )
 
 void MainWindow::onActionGenerate( int /*value_*/ )
 {
-  float alphaRadius = static_cast<float>(_radiusSlider->value( )) / 100.0f;
+  float alphaRadius = static_cast<float>(_radiusSlider->value()) / 100.0f;
   std::vector< float > alphaNeurites;
 
   for ( auto& _neuriteSlider: _neuriteSliders )
@@ -512,7 +563,6 @@ void MainWindow::onActionGenerate( int /*value_*/ )
     alphaNeurites.push_back(
       static_cast<float>(_neuriteSlider->value( )) / 100.0f );
   }
-
 
   _openGLWidget->makeCurrent( );
   _openGLWidget->update( );
@@ -918,22 +968,28 @@ void MainWindow::_initExtractionDock( )
   this->addDockWidget( Qt::DockWidgetAreas::enum_type::RightDockWidgetArea ,
                        _extractMeshDock , Qt::Vertical );
   _extractMeshDock->setSizePolicy( QSizePolicy::MinimumExpanding ,
-                                   QSizePolicy::Expanding );
+                                   QSizePolicy::MinimumExpanding );
 
   _extractMeshDock->setFeatures( QDockWidget::DockWidgetClosable |
                                  QDockWidget::DockWidgetMovable |
                                  QDockWidget::DockWidgetFloatable );
   _extractMeshDock->setWindowTitle( QString( "Edit And Save" ));
-  _extractMeshDock->setMinimumSize( 200 , 200 );
+  _extractMeshDock->setMinimumWidth( 250 );
 
   _extractMeshDock->close( );
 
-  auto* newWidget = new QWidget( );
+  auto newWidget = new QWidget( );
   _extractMeshDock->setWidget( newWidget );
 
-  auto* _meshDockLayout = new QVBoxLayout( );
+  auto _meshDockLayout = new QVBoxLayout( );
   _meshDockLayout->setAlignment( Qt::AlignTop );
   newWidget->setLayout( _meshDockLayout );
+
+  // Checkbox
+  _neuronAdditionalText = new QCheckBox("Show additional information");
+  _neuronAdditionalText->setChecked(false);
+  _meshDockLayout->addWidget(_neuronAdditionalText);
+  connect(_neuronAdditionalText, SIGNAL(stateChanged(int)), this, SLOT(updateNeuronList()));
 
   //Neurons group
   auto* _neuronsGroup = new QGroupBox( QString( "Select Neuron" ));
@@ -1000,13 +1056,13 @@ void MainWindow::_initConfigurationDock( )
   this->addDockWidget( Qt::DockWidgetAreas::enum_type::LeftDockWidgetArea ,
                        _configurationDock , Qt::Vertical );
   _configurationDock->setSizePolicy( QSizePolicy::MinimumExpanding ,
-                                     QSizePolicy::Expanding );
+                                     QSizePolicy::MinimumExpanding );
 
   _configurationDock->setFeatures( QDockWidget::DockWidgetClosable |
                                    QDockWidget::DockWidgetMovable |
                                    QDockWidget::DockWidgetFloatable );
   _configurationDock->setWindowTitle( QString( "Configuration" ));
-  _configurationDock->setMinimumSize( 200 , 200 );
+  _configurationDock->setMinimumWidth( 250 );
 
   _configurationDock->close( );
 
@@ -1074,63 +1130,56 @@ void MainWindow::_initRenderOptionsDock( )
   _renderOptionsDock = new QDockWidget( );
   this->addDockWidget( Qt::DockWidgetAreas::enum_type::LeftDockWidgetArea ,
                        _renderOptionsDock , Qt::Vertical );
-  _renderOptionsDock->setSizePolicy( QSizePolicy::Fixed ,
-                                     QSizePolicy::Fixed );
+  _renderOptionsDock->setSizePolicy( QSizePolicy::MinimumExpanding ,
+                                     QSizePolicy::MinimumExpanding );
   _renderOptionsDock->setFeatures( QDockWidget::DockWidgetClosable |
                                    QDockWidget::DockWidgetMovable |
                                    QDockWidget::DockWidgetFloatable );
   _renderOptionsDock->setWindowTitle( QString( "Render Options" ));
-  _renderOptionsDock->setMinimumSize( 200 , 200 );
+  _renderOptionsDock->setMinimumWidth( 250 );
 
   _renderOptionsDock->close( );
 
-  auto* newWidget = new QWidget( );
+  auto newWidget = new QWidget( );
   _renderOptionsDock->setWidget( newWidget );
 
-  auto* roDockLayout = new QVBoxLayout( );
+  auto roDockLayout = new QVBoxLayout( );
   roDockLayout->setAlignment( Qt::AlignTop );
   newWidget->setLayout( roDockLayout );
 
-
-  auto* colorGroup = new QGroupBox( QString( "Color" ));
-  colorGroup->setSizePolicy( QSizePolicy( QSizePolicy::Fixed ,
-                                          QSizePolicy::Fixed ));
+  auto colorGroup = new QGroupBox( QString( "Color" ));
   roDockLayout->addWidget( colorGroup );
-  auto* gridbox = new QGridLayout;
+  auto gridbox = new QGridLayout;
   colorGroup->setLayout( gridbox );
 
   gridbox->addWidget( new QLabel( QString( "Background color" )) , 0 , 0 );
   _backGroundColor = new ColorSelectionWidget( this );
+  _backGroundColor->color(QColor(255,255,255));
   gridbox->addWidget( _backGroundColor , 0 , 1 );
 
-  gridbox->addWidget( new QLabel( QString( "Neuron color" )) , 1 , 0 );
-  _neuronColor = new ColorSelectionWidget( this );
-  gridbox->addWidget( _neuronColor , 1 , 1 );
-
-  gridbox->addWidget( new QLabel( QString( "Selected neuron color" )) , 2 , 0 );
-  _selectedNeuronColor = new ColorSelectionWidget( this );
-  gridbox->addWidget( _selectedNeuronColor , 2 , 1 );
-
-
-  auto* renderGroup = new QGroupBox( QString( "Render piece selection" ));
+  auto renderGroup = new QGroupBox( QString( "Render piece selection" ));
   roDockLayout->addWidget( renderGroup );
-  auto* vbox = new QVBoxLayout;
+  auto vbox = new QVBoxLayout;
   renderGroup->setLayout( vbox );
 
   _neuronRender = new QComboBox( );
   _neuronRender->setSizePolicy( QSizePolicy( QSizePolicy::Fixed ,
                                              QSizePolicy::Fixed ));
-  vbox->addWidget( new QLabel( QString( "Neuron" )));
-  vbox->addWidget( _neuronRender );
+  auto hLay = new QHBoxLayout();
+  hLay->addWidget(new QLabel( QString( "Neuron" )));
+  hLay->addWidget(_neuronRender);
+  vbox->addLayout(hLay);
   _neuronRender->addItem( QString( "all" ));
   _neuronRender->addItem( QString( "soma" ));
   _neuronRender->addItem( QString( "neurites" ));
 
+  hLay = new QHBoxLayout();
+  hLay->addWidget(new QLabel( QString( "Selected Neuron" )));
   _selectedNeuronRender = new QComboBox( );
   _selectedNeuronRender->setSizePolicy( QSizePolicy( QSizePolicy::Fixed ,
                                                      QSizePolicy::Fixed ));
-  vbox->addWidget( new QLabel( QString( "Selected neuron" )));
-  vbox->addWidget( _selectedNeuronRender );
+  hLay->addWidget( _selectedNeuronRender );
+  vbox->addLayout(hLay);
   _selectedNeuronRender->addItem( QString( "all" ));
   _selectedNeuronRender->addItem( QString( "soma" ));
   _selectedNeuronRender->addItem( QString( "neurites" ));
@@ -1140,6 +1189,143 @@ void MainWindow::_initRenderOptionsDock( )
 
   connect( _ui->actionRenderOptions , SIGNAL( triggered( )) ,
            this , SLOT( updateRenderOptionsDock( )) );
+
+  auto* coloringGroup = new QGroupBox( QString( "Render coloring" ));
+  roDockLayout->addWidget( coloringGroup );
+  vbox = new QVBoxLayout;
+  coloringGroup->setLayout(vbox);
+
+  _renderColoring = new QComboBox(coloringGroup);
+  _renderColoring->setSizePolicy( QSizePolicy( QSizePolicy::Fixed ,
+                                               QSizePolicy::Fixed ));
+  _renderColoring->addItem("Selection");
+  _renderColoring->addItem("Morphology");
+  _renderColoring->addItem("Layer");
+  _renderColoring->addItem("Function");
+
+  hLay = new QHBoxLayout();
+  hLay->addWidget( new QLabel( QString( "Color by" )));
+  hLay->addWidget( _renderColoring );
+  vbox->addLayout(hLay);
+  auto line = new QFrame(coloringGroup);
+  line->setObjectName(QString::fromUtf8("line"));
+  line->setFrameShape(QFrame::HLine);
+  line->setFrameShadow(QFrame::Sunken);
+  vbox->addWidget(line);
+
+  _colorLayout = new QGridLayout();
+  vbox->addLayout(_colorLayout);
+  connect(_renderColoring, SIGNAL(currentIndexChanged(int)),
+           this,           SLOT(onColoringChanged(int)));
+
+  onColoringChanged(0);
+  coloringGroup->setEnabled(false);
+}
+
+void MainWindow::onColoringChanged(int index)
+{
+  if(!_scene) return;
+
+  QApplication::setOverrideCursor(Qt::WaitCursor);
+
+  _scene->coloringMode(static_cast<neurotessmesh::Scene::TColoringMode>(index));
+  const auto usedColors = updateNeuronList();
+
+  // Clear color widgets and refill with current colors.
+  std::function<void(QLayout*)> clearLayout = [&](QLayout *layout)
+  {
+     if (!layout) return;
+     while(auto item = layout->takeAt(0))
+     {
+        delete item->widget();
+        clearLayout(item->layout());
+     }
+
+     if(layout != dynamic_cast<QLayout*>(_colorLayout))
+       delete layout;
+  };
+
+  clearLayout(_colorLayout);
+
+  const char *TYPE = "type";
+
+  switch(_renderColoring->currentIndex())
+  {
+    case 0: // SELECTION
+      {
+        _colorLayout->addWidget(new QLabel("Unselected"), 0,0);
+        auto widget = new ColorSelectionWidget();
+        auto col = _scene->color(0);
+        widget->color(QColor::fromRgbF(col[0], col[1], col[2]));
+        widget->setProperty(TYPE, 0);
+        connect(widget, SIGNAL( colorChanged( QColor )) ,
+                this, SLOT( changeNeuronColor( QColor )) );
+
+        _colorLayout->addWidget(widget, 0, 1);
+        _colorLayout->addWidget(new QLabel("Selected"), 1,0);
+        widget = new ColorSelectionWidget();
+        col = _scene->color(1);
+        widget->color(QColor::fromRgbF(col[0], col[1], col[2]));
+        widget->setProperty(TYPE, 1);
+        _colorLayout->addWidget(widget, 1, 1);
+      }
+      break;
+    case 1: // MORPHOLOGY
+      {
+        for(int i = 0, row = 0; i <= nsol::Neuron::TMorphologicalType::DEEP_CEREBELLAR_NUCLEI; ++i)
+        {
+          if(usedColors.count(i) == 0) continue;
+          auto name = nsol::Neuron::typeToString(static_cast<nsol::Neuron::TMorphologicalType>(i));
+          _colorLayout->addWidget(new QLabel(QString::fromStdString(name)), row,0);
+          auto widget = new ColorSelectionWidget();
+          auto col = _scene->color(i);
+          widget->color(QColor::fromRgbF(col[0], col[1], col[2]));
+          widget->setProperty(TYPE, i);
+          connect(widget, SIGNAL( colorChanged( QColor )) ,
+                  this, SLOT( changeNeuronColor( QColor )) );
+          _colorLayout->addWidget(widget, row++, 1);
+        }
+      }
+      break;
+    case 2: // LAYER
+      {
+        for(int i = 1, row = 0; i <= 6; ++i)
+        {
+          if(usedColors.count(i) == 0) continue;
+          _colorLayout->addWidget(new QLabel(QString("Layer %1").arg(i)), row,0);
+          auto widget = new ColorSelectionWidget();
+          auto col = _scene->color(i);
+          widget->color(QColor::fromRgbF(col[0], col[1], col[2]));
+          widget->setProperty(TYPE, i);
+          connect(widget, SIGNAL( colorChanged( QColor )) ,
+                  this, SLOT( changeNeuronColor( QColor )) );
+          _colorLayout->addWidget(widget, row++, 1);
+        }
+      }
+      break;
+    case 3: // FUNCTION
+      {
+        for(int i = 0, row = 0; i <= nsol::Neuron::TFunctionalType::EXCITATORY; ++i)
+        {
+          if(usedColors.count(i) == 0) continue;
+          auto name = nsol::Neuron::functionToString(static_cast<nsol::Neuron::TFunctionalType>(i));
+          _colorLayout->addWidget(new QLabel(QString::fromStdString(name)), row,0);
+          auto widget = new ColorSelectionWidget();
+          auto col = _scene->color(i);
+          widget->color(QColor::fromRgbF(col[0], col[1], col[2]));
+          widget->setProperty(TYPE, i);
+          connect(widget, SIGNAL( colorChanged( QColor )) ,
+                  this, SLOT( changeNeuronColor( QColor )) );
+          _colorLayout->addWidget(widget, row++, 1);
+        }
+      }
+      break;
+    default:
+      break;
+  }
+
+  _openGLWidget->repaint();
+  QApplication::restoreOverrideCursor();
 }
 
 void MainWindow::closeEvent( QCloseEvent* e )
@@ -1199,6 +1385,22 @@ void MainWindow::_initPlayerDock( )
 #endif
 }
 
+void MainWindow::changeNeuronColor(QColor color)
+{
+  auto widget = qobject_cast<ColorSelectionWidget *>(sender());
+  if(widget)
+  {
+    bool ok = false;
+    const auto type = widget->property("type").toInt(&ok);
+    if(ok && _scene)
+    {
+      _scene->setColor(type, Eigen::Vector3f(color.redF(), color.greenF(), color.blueF()));
+    }
+    updateNeuronList();
+    _openGLWidget->repaint();
+  }
+}
+
 void MainWindow::loadData( const std::string& arg1 , const std::string& arg2 ,
                            const neurotessmesh::LoaderThread::DataFileType type )
 {
@@ -1225,6 +1427,8 @@ void MainWindow::loadData( const std::string& arg1 , const std::string& arg2 ,
 
 void MainWindow::onDataLoaded( )
 {
+  this->setWindowTitle("NeuroTessMesh");
+
   const auto errors = m_dataLoader->errors( );
   if ( !errors.isEmpty( ))
   {
@@ -1239,6 +1443,9 @@ void MainWindow::onDataLoaded( )
     msgbox.exec( );
     return;
   }
+
+  const auto fileName = QString::fromStdString(m_dataLoader->filename());
+  this->setWindowTitle("NeuroTessMesh - " + fileName);
 
   try
   {
@@ -1255,10 +1462,13 @@ void MainWindow::onDataLoaded( )
   }
   catch ( const std::exception& e )
   {
+    m_dataLoader = nullptr;
+
     QMessageBox msgbox{ this };
     msgbox.setWindowTitle( tr( "Error loading dataset" ));
     msgbox.setIcon( QMessageBox::Icon::Critical );
     msgbox.setText( tr( "Unable to load dataset. Geometry error." ));
+    msgbox.setDetailedText(QString::fromLatin1(e.what()));
     msgbox.setWindowIcon( QIcon( ":/icons/rsc/neurotessmesh.png" ));
     msgbox.setStandardButtons( QMessageBox::Ok );
     msgbox.exec( );
@@ -1268,23 +1478,45 @@ void MainWindow::onDataLoaded( )
   _openGLWidget->onLotValueChanged( _lotSlider->value( ));
   _openGLWidget->onDistanceValueChanged( _distanceSlider->value( ));
 
+  _backGroundColor->color(QColor(255,255,255));
+  _openGLWidget->changeClearColor(QColor(255,255,255));
+  _openGLWidget->changeNeuronColor(1, QColor(250,120,0)); // selected color
+  _openGLWidget->changeNeuronColor(0, QColor(0,120,250)); // unselected color
+  _renderColoring->parentWidget()->setEnabled(true);
+  _renderColoring->setCurrentIndex(0);
+  onColoringChanged(0);
   updateNeuronList( );
-  _backGroundColor->color( QColor( 255 , 255 , 255 ));
-  _neuronColor->color( QColor( 0 , 120 , 250 ));
-  _selectedNeuronColor->color( QColor( 250 , 120 , 0 ));
+
+  // Disable coloring options if not available.
+  auto hasMorphology = [](const std::pair<const unsigned int, nsol::NeuronPtr> &p){ return p.second->morphologicalType() != 0; };
+  const bool hasMorphoData = std::find_if(_scene->neurons().cbegin(), _scene->neurons().cend(), hasMorphology) != _scene->neurons().cend();
+
+  auto hasLayer = [](const std::pair<const unsigned int, nsol::NeuronPtr> &p){ return p.second->layer() != 0; };
+  const bool hasLayerData = std::find_if(_scene->neurons().cbegin(), _scene->neurons().cend(), hasLayer) != _scene->neurons().cend();
+
+  auto hasFunctionality = [](const std::pair<const unsigned int, nsol::NeuronPtr> &p){ return p.second->functionalType() != 0; };
+  const bool hasFunctionData = std::find_if(_scene->neurons().cbegin(), _scene->neurons().cend(), hasFunctionality) != _scene->neurons().cend();
+
+  int i = 1;
+  for(auto value: {hasMorphoData, hasLayerData, hasFunctionData})
+  {
+    auto model = dynamic_cast< QStandardItemModel * >( _renderColoring->model() );
+    auto item = model->item(i++, 0);
+    item->setEnabled( value );
+  }
 
   _openGLWidget->home( );
   _openGLWidget->changeNeuronPiece( _neuronRender->currentIndex( ));
-  _openGLWidget->changeSelectedNeuronPiece(
-    _selectedNeuronRender->currentIndex( ));
+
+  // @felix Change unselected/selected ? Rethink
+  //  _openGLWidget->changeSelectedNeuronPiece(_selectedNeuronRender->currentIndex());
+
 #ifdef NEUROTESSMESH_USE_SIMIL
   auto playerWidget = qobject_cast< qsimil::QSimControlWidget* >(
     _playerDock->widget( ));
   if ( playerWidget )
   {
-
-    // disable hasta que hagamos el merge a master de SimIL
-    //playerWidget->init( m_dataLoader->getPlayer( ));
+    playerWidget->init( m_dataLoader->getPlayer( ));
   }
 #endif
 
