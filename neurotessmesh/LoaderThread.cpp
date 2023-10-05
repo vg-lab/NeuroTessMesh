@@ -22,15 +22,16 @@
 
 #include "LoaderThread.h"
 
-// deps
+// NSOL
+#include <memory>
 #include <nsol/nsol.h>
 
+// SimIL
 #ifdef NEUROTESSMESH_USE_SIMIL
-
 #include <simil/simil.h>
-
 #endif
 
+// Eigen
 #include <Eigen/Geometry>
 #include <Eigen/Eigen>
 
@@ -40,6 +41,9 @@
 #include <QVBoxLayout>
 #include <QProgressBar>
 #include <QIcon>
+
+// C++
+#include <memory>
 
 using namespace neurotessmesh;
 
@@ -91,17 +95,19 @@ void LoaderThread::run( )
           nsol::MiniColumn ,
           nsol::Column >( );
 
-        emit progress( tr( "Loading Spikes" ) , 75 );
+//        emit progress( tr( "Loading Spikes" ) , 75 );
 #ifdef NEUROTESSMESH_USE_SIMIL
-        { // load the spikes data with SimIL, only for blueconfig.
-          auto spikesData = new simil::SpikeData( m_fileName ,
-                                                  simil::TDataType::TBlueConfig ,
-                                                  m_target );
-          spikesData->reduceDataToGIDS( );
-
-          m_player = new simil::SpikesPlayer( );
-          m_player->LoadData( spikesData );
-        }
+//        { // load the spikes data with SimIL, only for blueconfig.
+//          auto spikesData = std::make_shared< simil::SpikeData >(
+//            m_fileName ,
+//            simil::TDataType::TBlueConfig ,
+//            m_target
+//          );
+//          spikesData->reduceDataToGIDS( );
+//
+//          m_player = new simil::SpikesPlayer( );
+//          m_player->LoadData( spikesData );
+//        }
 #endif
 #else
         std::cerr << "Error: Brion support not built-in" << std::endl;
@@ -151,6 +157,7 @@ void LoaderThread::run( )
 }
 
 #ifdef NEUROTESSMESH_USE_SIMIL
+
 uint8_t LoaderThread::getTypeFromLoaderType( const NeuronType& type )
 {
   switch ( type )
@@ -165,6 +172,9 @@ uint8_t LoaderThread::getTypeFromLoaderType( const NeuronType& type )
       return nsol::Neuron::STELLATE;
     case NeuronType::BASKET_CELL:
       return nsol::Neuron::BASKET;
+    case NeuronType::UNDEFINED:
+    default:
+      break;
   }
   return nsol::Neuron::UNDEFINED;
 }
@@ -207,12 +217,14 @@ void LoaderThread::loadH5Morphology( )
       }
       else
       {
+        auto nsolType  = static_cast<nsol::Neuron::TMorphologicalType>(getTypeFromLoaderType(pair.first));
+
         auto* section = new nsol::NeuronMorphologySection( );
         sections[ id ] = section;
-
         if ( item.radii.empty( ))
         {
-          std::cout << "WARNING! Neurite " << id << " has no nodes!"
+          std::cout << "WARNING! Neurite " << id << " has no nodes! (type "
+                    << nsol::Neuron::typeToString(nsolType) << ")"
                     << std::endl;
           section->addNode( new nsol::Node(
             nsol::Vec3f( 0.0f , 0.0f , 0.0f ) , 0 , 0.0f
@@ -244,7 +256,8 @@ void LoaderThread::loadH5Morphology( )
           }
           else
           {
-            std::cout << "WARNING! Neurite " << id << " has no nodes!"
+            std::cout << "WARNING! Neurite " << id << " has no parent! (type "
+                      << nsol::Neuron::typeToString(nsolType) << ")"
                       << std::endl;
           }
         }
@@ -266,14 +279,15 @@ void LoaderThread::loadH5Morphology( )
   {
     auto morphology = morphologiesByType[ neuron.type ];
 
-    Eigen::Affine3f transform(Eigen::Translation3f(neuron.x, neuron.y, neuron.z));
+    Eigen::Affine3f transform(
+      Eigen::Translation3f( neuron.x , neuron.y , neuron.z ));
 
 
     auto* result = new nsol::Neuron(
       morphology ,
       0 ,
       neuronId++ ,
-      transform.matrix(),
+      transform.matrix( ) ,
       nullptr ,
       static_cast<nsol::Neuron::TMorphologicalType>(
         getTypeFromLoaderType( neuron.type )) ,
@@ -287,7 +301,7 @@ void LoaderThread::loadH5Morphology( )
 #endif
 
 LoadingDialog::LoadingDialog( QWidget* p )
-  : QDialog( p , Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint )
+: QDialog( p , Qt::Dialog | Qt::CustomizeWindowHint | Qt::WindowTitleHint )
 {
   setWindowIcon( QIcon( ":/icons/rsc/neurotessmesh.png" ));
 
@@ -302,7 +316,7 @@ LoadingDialog::LoadingDialog( QWidget* p )
 
   setSizePolicy( QSizePolicy::MinimumExpanding ,
                  QSizePolicy::MinimumExpanding );
-  setFixedSize( 600 , sizeHint( ).height( ));
+  setFixedSize( 600 , sizeHint().height( ));
 }
 
 void

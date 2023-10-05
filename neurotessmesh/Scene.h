@@ -59,6 +59,14 @@ namespace neurotessmesh
       NsolScene
     } TDataFileType;
 
+    typedef enum
+    {
+      SELECTION = 0,
+      MORPHOLOGY,
+      LAYER,
+      FUNCTION,
+    } TColoringMode;
+
     typedef std::tuple< nlgeometry::Meshes , std::vector< Eigen::Matrix4f >>
       NeuronMeshes;
 
@@ -92,6 +100,21 @@ namespace neurotessmesh
      */
     NEUROTESSMESH_API
     TSceneMode mode( ) const;
+
+    /**
+     * Method to set the scene mode
+     * @param mode_ new scnene mode
+     */
+    NEUROTESSMESH_API
+    void coloringMode( TColoringMode mode_ );
+
+    /**
+     * Method to get the scene mode
+     * @return the current scene mode
+     */
+    NEUROTESSMESH_API
+    TColoringMode coloringMode( ) const;
+
 
     /**
      * This method updates the scene with the current spikes.
@@ -162,34 +185,6 @@ namespace neurotessmesh
     void paintSelectedNeurites( bool paint_ );
 
     /**
-     * Method to change the unselected neuron color
-     * @param color_ color of the unselected neuron
-     */
-    NEUROTESSMESH_API
-    void unselectedNeuronColor( Eigen::Vector3f color_ );
-
-    /**
-     * Method to change the unselected neuron color
-     * @param color_ color of the unselected neuron
-     */
-    NEUROTESSMESH_API
-    void unselectedNeuronColor( const QColor& color_ );
-
-    /**
-     * Method to change the selected neuron color
-     * @param color_ color of the selected neuron
-     */
-    NEUROTESSMESH_API
-    void selectedNeuronColor( Eigen::Vector3f color_ );
-
-    /**
-     * Method to change the selected neuron color
-     * @param color_ color of the selected neuron
-     */
-    NEUROTESSMESH_API
-    void selectedNeuronColor( const QColor& color_ );
-
-    /**
      * Method to set the scene level of subdivision
      * @param lod_ scene level of detail
      */
@@ -215,7 +210,10 @@ namespace neurotessmesh
     std::vector< unsigned int > neuronIndices( );
 
     NEUROTESSMESH_API
-    void setNeuronToEdit( unsigned int id_ );
+    nsol::NeuronsMap& neurons() const;
+
+    NEUROTESSMESH_API
+    void setNeuronToEdit(const unsigned int id_);
 
     NEUROTESSMESH_API
     unsigned int numEditMorphologyNeurites( ) const;
@@ -239,6 +237,26 @@ namespace neurotessmesh
     NEUROTESSMESH_API
     void focusOnIndices( const std::vector< unsigned int >& indices_ );
 
+    /** \brief Returns the color of the given neuron according to
+     * current coloring method.
+     * \param[in] id Current id of the neuron.
+     *
+     */
+    Eigen::Vector3f neuronColor(const unsigned int id);
+
+    /** \brief Changes the color of the value with the given color for the current coloring type.
+     * \param[in] type Type, or number casted to int of the current coloring type.
+     * \param[in] color Color value.
+     *
+     */
+    void setColor(const int type, const Eigen::Vector3f color);
+
+    /** \brief Returns the color of the given type for the current coloring type.
+     * \param[in] type Type, or number casted to int of the current coloring type.
+     *
+     */
+    Eigen::Vector3f color(const int type) const;
+
   protected:
     /** \brief Animates the camera to the given position, radius and rotation.
      * \param[in] position Focus position.
@@ -258,12 +276,26 @@ namespace neurotessmesh
      */
     std::vector< Eigen::Vector3f > calculateUnselectedColors( float timestamp );
 
+    /** \brief Helper method that builds _neuronColors vector.
+     *
+     */
+    void rebuildNeuronsColors();
+
+    /** \brief Helper method to build the color information of the coloring categories using
+     * the base colors given by NSOL.
+     *
+     */
+    void initColors();
+
     //! Scene mode
     TSceneMode _mode;
 
+    //! Coloring mode
+    TColoringMode _colorMode;
+
     //! Scene camera
     reto::OrbitalCameraController* _camera;
-    reto::CameraAnimation* _animation;
+    std::shared_ptr<reto::CameraAnimation> _animation;
 
     //! Neurolots engine to render morphological data
     nlrender::Renderer* _renderer;
@@ -271,11 +303,11 @@ namespace neurotessmesh
     //! Meshes attribs format
     nlgeometry::AttribsFormat _attribsFormat;
 
-    //! Unselected neuron color
-    Eigen::Vector3f _unselectedColor;
-
-    //! Selected neuron color
+    // Mesh colors
+    std::vector<Eigen::Vector3f> _selectedColors;
+    std::vector<Eigen::Vector3f> _unselectedColors;
     Eigen::Vector3f _selectedColor;
+    Eigen::Vector3f _unselectedColor;
 
     //! Nsol DataSet, contains neurons
     nsol::DataSet* _dataSet;
@@ -317,6 +349,8 @@ namespace neurotessmesh
     std::unordered_map< nlgeometry::MeshPtr , float > _activationTimestamps;
     Gradient _gradient;
     float _delay;
+
+    std::map<int, std::map<int, Eigen::Vector3f>> _colors;
   };
 
 }

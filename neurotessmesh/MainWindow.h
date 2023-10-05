@@ -13,6 +13,7 @@
 #include "OpenGLWidget.h"
 #include "ColorSelectionWidget.h"
 #include "LoaderThread.h"
+#include <set>
 
 #include <QDockWidget>
 #include <QListWidget>
@@ -21,6 +22,11 @@
 #include <QComboBox>
 #include <QRadioButton>
 #include <QGroupBox>
+#include <QCheckBox>
+
+constexpr int ID_ROLE = Qt::UserRole +1;
+constexpr int COLOR_ROLE = Qt::UserRole +2;
+constexpr int TEXT_ROLE = Qt::UserRole +3;
 
 namespace Ui
 {
@@ -61,9 +67,13 @@ public:
 
   void openHDF5File( const std::string& fileName );
 
-  void updateNeuronList( );
-
 public slots:
+
+  /** \brief Updates the neurons list and returns the coloring values used
+   * for the current coloring method.
+   *
+   */
+  std::set<int> updateNeuronList( );
 
   void home( );
 
@@ -90,6 +100,8 @@ public slots:
   void onListClicked( QListWidgetItem* item );
 
   void onActionGenerate( int value_ );
+
+  void onColoringChanged(int index);
 
 protected slots:
 
@@ -125,6 +137,12 @@ protected slots:
    *
    */
   void onDataLoaded( );
+
+  /** \brief Updates the neuron color changed by the user.
+   * \param[in] color New neuron color.
+   *
+   */
+  void changeNeuronColor(QColor color);
 
 protected:
   virtual void closeEvent( QCloseEvent* e ) override;
@@ -183,29 +201,84 @@ private:
   QComboBox* _neuronRender;
   QComboBox* _selectedNeuronRender;
 
+  QComboBox* _renderColoring;
+  QCheckBox* _neuronAdditionalText;
+  QGridLayout *_colorLayout;
+
   // Recorder
   Recorder* _recorder;
   std::shared_ptr< neurotessmesh::LoaderThread > m_dataLoader;
 };
 
-/** \brief List item to sort neuron list correctly.
+/** \class NeuronListItem
+ * \brief List item for the neuron list widget.
  *
  */
-class NeuronListItem: public QListWidgetItem
+class NeuronListItem
+: public QListWidgetItem
 {
   public:
-    explicit NeuronListItem(uint32_t id)
-    : QListWidgetItem(QString::number(id))
+    /** \brief NeuronListItem class constructor.
+     * \param[in] id Id number of the neuron in the dataset.
+     * \param[in] text Text to show in the item.
+     * \param[in] color Background color.
+     *
+     */
+    explicit NeuronListItem(uint32_t id, QString text = QString(), QColor color = QColor())
+    : QListWidgetItem()
     , m_id{id}
+    , m_text{text}
+    , m_color{color}
     {}
 
+    virtual QVariant data(int role) const override
+    {
+      switch(role)
+      {
+        case Qt::DisplayRole:
+          return QString::number(m_id) + " " + m_text;
+          break;
+        case Qt::BackgroundColorRole:
+          if(m_color != QColor()) return m_color;
+          break;
+        case Qt::TextColorRole:
+          if(m_color != QColor())
+          { // try to return a color with a lot of contrast with the background
+            const auto a = 1 - ( 0.299 * m_color.redF() + 0.587 * m_color.greenF() + 0.114 * m_color.blueF());
+            return (a <= 0.3) ? QColor(0,0,0) : QColor(255,255,255);
+          }
+          break;
+        case ID_ROLE:
+          return m_id;
+          break;
+        case COLOR_ROLE:
+          return m_color.name();
+          break;
+        case TEXT_ROLE:
+          return m_text;
+          break;
+        default:
+          break;
+      }
+
+      return QListWidgetItem::data(role);
+    }
+
+    /** \brief NeuronListItem class virtual destructor.
+     *
+     */
     virtual ~NeuronListItem() {};
 
+    /** \brief To sort the items in the list.
+     *
+     */
     bool operator <(const QListWidgetItem &other) const override
     {
       return this->m_id < static_cast<const NeuronListItem&>(other).m_id;
     }
 
-    uint32_t m_id;
+    uint32_t m_id;  /** neuron id in the dataset. */
+    QString m_text; /** text to show. */
+    QColor m_color; /** background color. */
 };
 

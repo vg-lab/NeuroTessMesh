@@ -192,9 +192,7 @@ public slots:
 
   void changeClearColor( QColor );
 
-  void changeNeuronColor( QColor );
-
-  void changeSelectedNeuronColor( QColor );
+  void changeNeuronColor(const int type, const QColor &color);
 
 protected:
 

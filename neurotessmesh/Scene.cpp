@@ -26,7 +26,7 @@
 #include <utility>
 #include <nlgenerator/nlgenerator.h>
 
-constexpr float COLOR_FACTOR = 1 / 255.0f;
+constexpr float CAMERA_ANIMATION_DURATION = 1.5f;
 
 namespace neurotessmesh
 {
@@ -37,11 +37,10 @@ namespace neurotessmesh
 #endif
                 )
     : _mode( VISUALIZATION )
+    , _colorMode(SELECTION)
     , _camera( camera )
     , _animation( nullptr )
     , _renderer( new nlrender::Renderer( ))
-    , _unselectedColor( 0.5f , 0.5f , 0.8f )
-    , _selectedColor( 0.8f , 0.5f , 0.5f )
     , _dataSet( dataset )
 #ifdef NEUROTESSMESH_USE_SIMIL
     , _simulationPlayer( player )
@@ -63,12 +62,17 @@ namespace neurotessmesh
     _attribsFormat[ 1 ] = nlgeometry::TAttribType::CENTER;
     _attribsFormat[ 2 ] = nlgeometry::TAttribType::TANGENT;
 
+    initColors();
     generateMeshes( );
     _boundingBox = computeBoundingBox( );
+
+    const auto fov = _camera->camera()->fieldOfView();
+    const auto radius = _boundingBox.radius( ) / std::sin(fov);
+
     _camera->position( _boundingBox.center( ));
-    _camera->radius(
-      _boundingBox.radius( ) / std::sin( _camera->camera( )->fieldOfView( )));
+    _camera->radius(radius);
     conformRenderTuples( );
+    rebuildNeuronsColors();
   }
 
   Scene::~Scene( )
@@ -120,7 +124,7 @@ namespace neurotessmesh
 #endif
   }
 
-  void Scene::render( )
+  void Scene::render()
   {
     Eigen::Matrix4f projection( _camera->camera( )->projectionMatrix( ));
     _renderer->projectionMatrix( ) = projection;
@@ -131,47 +135,43 @@ namespace neurotessmesh
     {
       case VISUALIZATION:
 #ifdef NEUROTESSMESH_USE_SIMIL
-        if ( _simulationPlayer != nullptr )
-        {
-          const auto timeStamp = _simulationPlayer->currentTime();
+      {
+        const float timeStamp = _simulationPlayer ? _simulationPlayer->currentTime() : 0.f;
           _renderer->render( std::get< 0 >( _unselectedNeurons ) ,
                              std::get< 1 >( _unselectedNeurons ) ,
-                             _selectedColor,
-                             calculateUnselectedColors(timeStamp) , true ,
+                             _unselectedColors, _simulationPlayer ?
+                             calculateUnselectedColors(timeStamp):_unselectedColors , true ,
                              _paintUnselectedSoma ,
                              _paintUnselectedNeurites );
-        }
-        else
-        {
-          _renderer->render( std::get< 0 >( _unselectedNeurons ) ,
-                             std::get< 1 >( _unselectedNeurons ) ,
-                             _unselectedColor, true ,
-                             _paintUnselectedSoma ,
-                             _paintUnselectedNeurites );
-        }
+      }
 #else
-        _renderer->render( std::get< 0 >( _unselectedNeurons ) ,
-                           std::get< 1 >( _unselectedNeurons ) ,
-                           _unselectedColor, true ,
-                           _paintUnselectedSoma ,
-                           _paintUnselectedNeurites );
+      _renderer->render( std::get< 0 >( _unselectedNeurons ) ,
+                         std::get< 1 >( _unselectedNeurons ) ,
+                         _unselectedColors, _unselectedColors, true , _paintSelectedSoma ,
+                         _paintSelectedNeurites );
 #endif
 
         _renderer->render( std::get< 0 >( _selectedNeurons ) ,
                            std::get< 1 >( _selectedNeurons ) ,
-                           _selectedColor , true , _paintSelectedSoma ,
+                           _selectedColors, _selectedColors, true , _paintSelectedSoma ,
                            _paintSelectedNeurites );
         break;
       case EDITION:
-        if ( isEditNeuronMeshExtraction( ))
+        if ( isEditNeuronMeshExtraction( ) && _editMesh)
         {
+          auto idOfNeuron = [this](const std::pair<unsigned int, nsol::NeuronPtr> &n){ return n.second == this->_editNeuron; };
+          auto it = std::find_if(_dataSet->neurons().cbegin(), _dataSet->neurons().cend(), idOfNeuron);
+          auto color = _selectedColor;
+          if(it != _dataSet->neurons().cend())
+            color = neuronColor((*it).first);
+
           _renderer->render( _editMesh , _editNeuron->transform( ) ,
-                             _unselectedColor , true ,
+                             color , true ,
                              _paintUnselectedSoma , _paintUnselectedNeurites );
         }
         break;
       default:
-        assert( false );
+        assert(false);
     }
   }
 
@@ -229,16 +229,16 @@ namespace neurotessmesh
 
     for ( const auto id: indices_ )
     {
-      auto neuronMapIt = _dataSet->neurons( ).find( id );
+      const auto neuronMapIt = _dataSet->neurons( ).find( id );
       if ( neuronMapIt != _dataSet->neurons( ).end( ))
       {
-        auto neuron = neuronMapIt->second;
+        const auto neuron = neuronMapIt->second;
         auto morphology = neuron->morphology( );
         if ( morphology )
         {
-          auto radius = morphology->soma( )->maxRadius( );
-          auto center = morphology->soma( )->center( );
-          Eigen::Vector4f position = neuron->transform( ) *
+          const auto radius = morphology->soma( )->maxRadius( );
+          const auto center = morphology->soma( )->center( );
+          const Eigen::Vector4f position = neuron->transform( ) *
                                      nsol::Vec4f( center.x( ) , center.y( ) ,
                                                   center.z( ) , 1.0f );
           Eigen::Array3f minVec( position.x( ) - radius ,
@@ -258,16 +258,16 @@ namespace neurotessmesh
   nlgeometry::AxisAlignedBoundingBox Scene::computeBoundingBox( )
   {
     std::vector< unsigned int > indices;
-    for ( const auto& neuronIt: _dataSet->neurons( ))
+    for (const auto& neuronIt: _dataSet->neurons())
     {
       indices.push_back( neuronIt.first );
     }
     return computeBoundingBox( indices );
   }
 
-  void Scene::generateMeshes( )
+  void Scene::generateMeshes()
   {
-    for ( auto neuronIt: _dataSet->neurons( ))
+    for (const auto neuronIt: _dataSet->neurons( ))
     {
       auto morphology = neuronIt.second->morphology( );
       if ( morphology )
@@ -304,44 +304,12 @@ namespace neurotessmesh
 
   void Scene::paintSelectedSoma( bool paint_ )
   {
-
     _paintSelectedSoma = paint_;
   }
 
   void Scene::paintSelectedNeurites( bool paint_ )
   {
-
     _paintSelectedNeurites = paint_;
-  }
-
-  void Scene::unselectedNeuronColor( Eigen::Vector3f color_ )
-  {
-    _unselectedColor = std::move( color_ );
-
-    _gradient[1] = { 1.0f , { _unselectedColor[0], _unselectedColor[1], _unselectedColor[2] } };
-  }
-
-  void Scene::unselectedNeuronColor( const QColor& color_ )
-  {
-    unselectedNeuronColor( Eigen::Vector3f(
-      float( color_.red( )) * COLOR_FACTOR ,
-      float( color_.green( )) * COLOR_FACTOR ,
-      float( color_.blue( )) * COLOR_FACTOR
-    ));
-  }
-
-  void Scene::selectedNeuronColor( Eigen::Vector3f color_ )
-  {
-    _selectedColor = std::move( color_ );
-  }
-
-  void Scene::selectedNeuronColor( const QColor& color_ )
-  {
-    selectedNeuronColor( Eigen::Vector3f(
-      float( color_.red( )) * COLOR_FACTOR ,
-      float( color_.green( )) * COLOR_FACTOR ,
-      float( color_.blue( )) * COLOR_FACTOR
-    ));
   }
 
   void Scene::levelOfDetail( float lod_ )
@@ -374,21 +342,27 @@ namespace neurotessmesh
     return indices;
   }
 
-  void Scene::setNeuronToEdit( unsigned int id_ )
+  nsol::NeuronsMap& Scene::neurons() const
   {
-    auto neuronIt = _dataSet->neurons( ).find( id_ );
+    return _dataSet->neurons();
+  }
+
+  void Scene::setNeuronToEdit( const unsigned int id_ )
+  {
+    const auto neuronIt = _dataSet->neurons( ).find( id_ );
     if ( neuronIt != _dataSet->neurons( ).end( ))
     {
       _editNeuron = neuronIt->second;
       if ( _editNeuron )
       {
-        auto meshIt = _neuronMeshes.find( _editNeuron->morphology( ));
+        const auto meshIt = _neuronMeshes.find( _editNeuron->morphology( ));
         if ( meshIt != _neuronMeshes.end( ))
         {
+
           _editMesh = meshIt->second;
           mode( Scene::EDITION );
           std::vector< unsigned int > indices = { id_ };
-          auto aabb = computeBoundingBox( indices );
+          const auto aabb = computeBoundingBox( indices );
           animateCamera( aabb.center( ) , aabb.radius( ) / std::sin(
             _camera->camera( )->fieldOfView( )));
         }
@@ -447,7 +421,7 @@ namespace neurotessmesh
     std::vector< Eigen::Matrix4f > selectedModels;
     for ( const auto neuronIt: _dataSet->neurons( ))
     {
-      auto neuron = neuronIt.second;
+      const auto neuron = neuronIt.second;
       auto meshIt = _neuronMeshes.find( neuron->morphology( ));
       if ( meshIt != _neuronMeshes.end( ))
       {
@@ -467,22 +441,20 @@ namespace neurotessmesh
     _selectedNeurons = std::make_tuple( selectedMeshes , selectedModels );
   }
 
-  void Scene::changeSelectedIndices(
-    const std::vector< unsigned int >& indices_ )
+  void Scene::changeSelectedIndices(const std::vector< unsigned int >& indices_ )
   {
-    _selectedIndices = std::set< unsigned int >(
-      indices_.begin( ) , indices_.end( ));
-    conformRenderTuples( );
+    _selectedIndices = std::set<unsigned int>(indices_.begin(), indices_.end());
+    conformRenderTuples();
   }
 
-  void Scene::focusOnIndices( const std::vector< unsigned int >& indices_ )
+  void Scene::focusOnIndices(const std::vector< unsigned int >& indices_)
   {
-    if ( !indices_.empty( ))
+    if(!indices_.empty())
     {
-      auto aabb = computeBoundingBox( indices_ );
-      animateCamera( aabb.center( ) ,
-                     aabb.radius( ) /
-                     std::sin( _camera->camera( )->fieldOfView( )));
+      const auto aabb = computeBoundingBox( indices_ );
+      animateCamera(aabb.center(),
+                    aabb.radius() /
+                    std::sin( _camera->camera()->fieldOfView( )));
     }
     else
     {
@@ -499,27 +471,26 @@ namespace neurotessmesh
     if ( _camera->isAniming( ))
     {
       _camera->stopAnim( );
-      delete _animation;
+      _animation = nullptr;
     }
 
-    constexpr float CAMERA_ANIMATION_DURATION = 2.f;
     const auto rotInterpolation = rotAnimation ? reto::CameraAnimation::LINEAR
                                                : reto::CameraAnimation::NONE;
 
-    _animation = new reto::CameraAnimation( reto::CameraAnimation::LINEAR ,
-                                            rotInterpolation ,
-                                            reto::CameraAnimation::LINEAR );
+    _animation = std::make_shared<reto::CameraAnimation>( reto::CameraAnimation::LINEAR ,
+                                                          rotInterpolation ,
+                                                          reto::CameraAnimation::LINEAR );
 
-    auto startCam = new reto::KeyCamera( 0.f , _camera->position( ) ,
+    const auto startCam = new reto::KeyCamera( 0.f , _camera->position( ) ,
                                          _camera->rotation( ) ,
                                          _camera->radius( ));
     _animation->addKeyCamera( startCam );
 
-    auto targetCam = new reto::KeyCamera( CAMERA_ANIMATION_DURATION ,
-                                          position , rotation , radius );
+    const auto targetCam = new reto::KeyCamera( CAMERA_ANIMATION_DURATION ,
+                                                position , rotation , radius );
     _animation->addKeyCamera( targetCam );
 
-    _camera->startAnim( _animation );
+    _camera->startAnim( _animation.get() );
   }
 
   std::vector< Eigen::Vector3f > Scene::calculateUnselectedColors( float timestamp )
@@ -547,13 +518,12 @@ namespace neurotessmesh
       float end = gradient[ first + 1 ].first;
       float normalizedT = ( t - start ) / ( end - start );
 
-      const Eigen::Vector3f mixedColor = (gradient[ first ].second * (1. - normalizedT)) + (gradient[ first + 1 ].second * normalizedT);
+      const Eigen::Vector3f mixedColor = (gradient[ first ].second * (1.f - normalizedT)) + (gradient[ first + 1 ].second * normalizedT);
       return mixedColor;
     };
 
     auto& neurons = std::get< 0 >( _unselectedNeurons );
-
-    auto colors = std::vector< Eigen::Vector3f >(neurons.size(), _unselectedColor);
+    auto colors = _unselectedColors;
     if(timestamp < 0
 #ifdef NEUROTESSMESH_USE_SIMIL
         || !_simulationPlayer
@@ -576,5 +546,142 @@ namespace neurotessmesh
       ++index;
     }
     return colors;
+  }
+
+  void Scene::coloringMode(Scene::TColoringMode mode_)
+  {
+    if(_colorMode != mode_)
+    {
+      _colorMode = mode_;
+      rebuildNeuronsColors();
+    }
+  }
+
+  Scene::TColoringMode Scene::coloringMode() const
+  {
+    return _colorMode;
+  }
+
+  void Scene::rebuildNeuronsColors()
+  {
+    _selectedColors.clear();
+    _unselectedColors.clear();
+    if(!_dataSet) return;
+
+    for(const auto &neuron: _dataSet->neurons())
+    {
+      const auto color = neuronColor(neuron.first);
+
+      if(_selectedIndices.find(neuron.first) != _selectedIndices.end())
+      {
+        _selectedColors.push_back(color);
+      }
+      else
+      {
+        _unselectedColors.push_back(color);
+      }
+    }
+  }
+
+  Eigen::Vector3f Scene::neuronColor(const unsigned int id)
+  {
+    Eigen::Vector3f color{0,0,0};
+
+    const auto neuronIt = _dataSet->neurons().find(id);
+    if(neuronIt == _dataSet->neurons().cend()) return color;
+
+    const auto isSelected = _selectedIndices.find(id) != _selectedIndices.end();
+    const nsol::NeuronPtr neuron = _colorMode != SELECTION ? (*neuronIt).second : nullptr;
+
+    switch(_colorMode)
+    {
+      case MORPHOLOGY:
+        color = _colors[MORPHOLOGY][static_cast<int>(neuron->morphologicalType())];
+        break;
+      case LAYER:
+        color = _colors[LAYER][neuron->layer()];
+        break;
+      case FUNCTION:
+        color = _colors[FUNCTION][static_cast<int>(neuron->functionalType())];
+        break;
+      default:
+      case SELECTION:
+        color = _colors[SELECTION][static_cast<int>(isSelected)];
+      break;
+    }
+
+    // If Type, layer or function is unknown use selection colors.
+    if(color.isZero())
+    {
+      color = isSelected ? _selectedColor : _unselectedColor;
+    }
+
+    return color;
+  }
+
+  void Scene::initColors()
+  {
+    _colors[SELECTION][0] = _unselectedColor;
+    _colors[SELECTION][1] = _selectedColor;
+
+    for(int i = 0; i <= nsol::Neuron::TMorphologicalType::DEEP_CEREBELLAR_NUCLEI; ++i)
+      _colors[MORPHOLOGY][i] = nsol::Neuron::typeToColor(static_cast<nsol::Neuron::TMorphologicalType>(i));
+
+    for(int i = 1; i <= 6; ++i)
+      _colors[LAYER][i] = nsol::Neuron::layerToColor(i);
+
+    for(int i = 0; i <= nsol::Neuron::TFunctionalType::EXCITATORY; ++i)
+      _colors[FUNCTION][i] = nsol::Neuron::functionToColor(static_cast<nsol::Neuron::TFunctionalType>(i));
+  }
+
+  void Scene::setColor(const int type, const Eigen::Vector3f color)
+  {
+    switch(_colorMode)
+    {
+      case SELECTION:
+        if(type < 0 || type > 1) return;
+        break;
+      case MORPHOLOGY:
+        if(type < 0 || type > static_cast<int>(nsol::Neuron::TMorphologicalType::DEEP_CEREBELLAR_NUCLEI)) return;
+        break;
+      case LAYER:
+        if(type < 1 || type > 6) return;
+        break;
+      case FUNCTION:
+        if(type < 0 || type > static_cast<int>(nsol::Neuron::TFunctionalType::EXCITATORY)) return;
+        break;
+      default:
+        return;
+        break;
+    }
+
+    _colors[_colorMode][type] = color;
+    rebuildNeuronsColors();
+  }
+
+  Eigen::Vector3f Scene::color(const int type) const
+  {
+    Eigen::Vector3f color{0,0,0};
+
+    switch(_colorMode)
+    {
+      case SELECTION:
+        if(type < 0 || type > 1) return color;
+        break;
+      case MORPHOLOGY:
+        if(type < 0 || type > static_cast<int>(nsol::Neuron::TMorphologicalType::DEEP_CEREBELLAR_NUCLEI)) return color;
+        break;
+      case LAYER:
+        if(type < 1 || type > 6) return color;
+        break;
+      case FUNCTION:
+        if(type < 0 || type > static_cast<int>(nsol::Neuron::TFunctionalType::EXCITATORY)) return color;
+        break;
+      default:
+        return color;
+        break;
+    }
+
+    return _colors.at(_colorMode).at(type);
   }
 }

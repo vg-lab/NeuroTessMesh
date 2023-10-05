@@ -84,7 +84,7 @@ Ubuntu-Subproject:
 Win7:
  stage: build
  script:
-   #- set WINAPP_REPO=gitlabci@vg-lab.es:apps
+  #- set WINAPP_REPO=gitlabci@vg-lab.es:apps
   - set WINEXES=neurotessmesh
   - call %ENVFILESDIR%\glut.bat
   - call %ENVFILESDIR%\glew-2.1.0.bat
