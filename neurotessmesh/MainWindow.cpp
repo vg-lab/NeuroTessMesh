@@ -172,6 +172,8 @@ void MainWindow::init( const std::string& zeqSession_ )
 //  connect( _selectedNeuronRender , SIGNAL( currentIndexChanged( int )) ,
 //           _openGLWidget , SLOT( changeSelectedNeuronPiece( int )) );
 //  _selectedNeuronRender->currentIndexChanged( 0 );
+  _ui->actionSimulation_player_options->setVisible(false);
+  _ui->actionSimulation_player_options->setEnabled(false);
 
   connect( _ui->actionLoad_camera_positions , SIGNAL( triggered( bool )) ,
            this ,
