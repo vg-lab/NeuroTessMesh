@@ -228,9 +228,10 @@ void MainWindow::openHDF5File( const std::string& fileName )
 
 std::set<int> MainWindow::updateNeuronList( )
 {
-  QApplication::setOverrideCursor(Qt::WaitCursor);
-
   std::set<int> usedColoringValues;
+  if(!_scene) return usedColoringValues;
+
+  QApplication::setOverrideCursor(Qt::WaitCursor);
 
   const auto currentIdx = _neuronList->currentRow();
   _neuronList->clear( );
