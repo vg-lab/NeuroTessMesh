@@ -53,3 +53,8 @@ void ColorSelectionWidget::color( const QColor& color_ )
   emit this->colorChanged( _color );
   repaint();
 }
+
+QColor ColorSelectionWidget::color() const
+{
+  return _color;
+}

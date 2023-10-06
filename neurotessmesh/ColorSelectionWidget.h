@@ -30,6 +30,8 @@ public:
 
   void color( const QColor& color_ );
 
+  QColor color() const;
+
 signals:
   void colorChanged( QColor color );
 

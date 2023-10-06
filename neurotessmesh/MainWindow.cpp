@@ -1479,8 +1479,7 @@ void MainWindow::onDataLoaded( )
   _openGLWidget->onLotValueChanged( _lotSlider->value( ));
   _openGLWidget->onDistanceValueChanged( _distanceSlider->value( ));
 
-  _backGroundColor->color(QColor(255,255,255));
-  _openGLWidget->changeClearColor(QColor(255,255,255));
+  _openGLWidget->changeClearColor(_backGroundColor->color());
   _openGLWidget->changeNeuronColor(1, QColor(250,120,0)); // selected color
   _openGLWidget->changeNeuronColor(0, QColor(0,120,250)); // unselected color
   _renderColoring->parentWidget()->setEnabled(true);
