@@ -115,7 +115,8 @@ void MainWindow::init( const std::string& zeqSession_ )
 {
   _openGLWidget->idleUpdate( _ui->actionUpdateOnIdle->isChecked( ));
 
-  // @felix If session is empty should it connect to DEFAULT?
+  // @felix If session is empty should it connect to DEFAULT? Currently it
+  // doesn't connect.
   if ( !zeqSession_.empty( ))
     _openGLWidget->setZeqSession( zeqSession_ );
 
@@ -166,29 +167,24 @@ void MainWindow::init( const std::string& zeqSession_ )
 
   connect( _neuronRender , SIGNAL( currentIndexChanged( int )) ,
            _openGLWidget , SLOT( changeNeuronPiece( int )) );
-  _neuronRender->currentIndexChanged( 1 );
 
-  // TODO: @felix rework selection
-//  connect( _selectedNeuronRender , SIGNAL( currentIndexChanged( int )) ,
-//           _openGLWidget , SLOT( changeSelectedNeuronPiece( int )) );
-//  _selectedNeuronRender->currentIndexChanged( 0 );
+  connect( _selectedNeuronRender , SIGNAL( currentIndexChanged( int )) ,
+           _openGLWidget , SLOT( changeSelectedNeuronPiece( int )) );
+
   _ui->actionSimulation_player_options->setVisible(false);
   _ui->actionSimulation_player_options->setEnabled(false);
 
   connect( _ui->actionLoad_camera_positions , SIGNAL( triggered( bool )) ,
-           this ,
-           SLOT( loadCameraPositions( )) );
+           this , SLOT( loadCameraPositions( )) );
 
   connect( _ui->actionSave_camera_positions , SIGNAL( triggered( bool )) ,
-           this ,
-           SLOT( saveCameraPositions( )) );
+           this , SLOT( saveCameraPositions( )) );
 
-  connect( _ui->actionAdd_camera_position , SIGNAL( triggered( bool )) , this ,
-           SLOT( addCameraPosition( )) );
+  connect( _ui->actionAdd_camera_position , SIGNAL( triggered( bool )),
+           this , SLOT( addCameraPosition( )) );
 
   connect( _ui->actionRemove_camera_position , SIGNAL( triggered( bool )) ,
-           this ,
-           SLOT( removeCameraPosition( )) );
+           this , SLOT( removeCameraPosition( )) );
 
   connect( _backGroundColor , SIGNAL( colorChanged( QColor )) ,
            _openGLWidget , SLOT( changeClearColor( QColor )) );
@@ -375,7 +371,6 @@ void MainWindow::openHDF5FileThroughDialog( )
 
 void MainWindow::showAbout( )
 {
-
   QMessageBox::about(
     this , tr( "About " ) + tr( "NeuroTessMesh" ) ,
     tr( "<p><BIG><b>" ) + tr( "NeuroTessMesh" ) + tr( "</b></BIG><br><br>" ) +
@@ -1175,6 +1170,7 @@ void MainWindow::_initRenderOptionsDock( )
   _neuronRender->addItem( QString( "all" ));
   _neuronRender->addItem( QString( "soma" ));
   _neuronRender->addItem( QString( "neurites" ));
+  _neuronRender->setCurrentIndex(0);
 
   hLay = new QHBoxLayout();
   hLay->addWidget(new QLabel( QString( "Selected Neuron" )));
@@ -1186,6 +1182,7 @@ void MainWindow::_initRenderOptionsDock( )
   _selectedNeuronRender->addItem( QString( "all" ));
   _selectedNeuronRender->addItem( QString( "soma" ));
   _selectedNeuronRender->addItem( QString( "neurites" ));
+  _selectedNeuronRender->setCurrentIndex(0);
 
   connect( _renderOptionsDock->toggleViewAction( ) , SIGNAL( toggled( bool )) ,
            _ui->actionRenderOptions , SLOT( setChecked( bool )) );
@@ -1234,7 +1231,7 @@ void MainWindow::onColoringChanged(int index)
   _scene->coloringMode(static_cast<neurotessmesh::Scene::TColoringMode>(index));
   const auto usedColors = updateNeuronList();
 
-  // Clear color widgets and refill with current colors.
+  // Clear color widgets and refill with current colors. Needed bc recursion.
   std::function<void(QLayout*)> clearLayout = [&](QLayout *layout)
   {
      if (!layout) return;
@@ -1509,9 +1506,7 @@ void MainWindow::onDataLoaded( )
 
   _openGLWidget->home( );
   _openGLWidget->changeNeuronPiece( _neuronRender->currentIndex( ));
-
-  // @felix Change unselected/selected ? Rethink
-  //  _openGLWidget->changeSelectedNeuronPiece(_selectedNeuronRender->currentIndex());
+  _openGLWidget->changeSelectedNeuronPiece(_selectedNeuronRender->currentIndex());
 
 #ifdef NEUROTESSMESH_USE_SIMIL
   auto playerWidget = qobject_cast< qsimil::QSimControlWidget* >(
