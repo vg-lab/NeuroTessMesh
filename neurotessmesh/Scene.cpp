@@ -445,6 +445,7 @@ namespace neurotessmesh
   {
     _selectedIndices = std::set<unsigned int>(indices_.begin(), indices_.end());
     conformRenderTuples();
+    rebuildNeuronsColors();
   }
 
   void Scene::focusOnIndices(const std::vector< unsigned int >& indices_)
