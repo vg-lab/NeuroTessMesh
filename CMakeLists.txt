@@ -5,7 +5,7 @@
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-project(NeuroTessMesh VERSION 0.5.0)
+project(NeuroTessMesh VERSION 0.5.1)
 set(NeuroTessMesh_VERSION_ABI 1)
 
 # Disable in source building
@@ -78,8 +78,8 @@ if ( ZEROEQ_FOUND )
 endif( )
 
 common_find_package_post( )
+add_subdirectory(neurotessmesh)
 
-add_subdirectory( neurotessmesh )
 if (GLUT_FOUND AND BOOST_FOUND)
   add_subdirectory( neurotessmeshServer )
 endif( )

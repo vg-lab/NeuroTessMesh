@@ -374,65 +374,26 @@ void MainWindow::showAbout( )
   QMessageBox::about(
     this , tr( "About " ) + tr( "NeuroTessMesh" ) ,
     tr( "<p><BIG><b>" ) + tr( "NeuroTessMesh" ) + tr( "</b></BIG><br><br>" ) +
-    tr( "version " ) +
-    tr( neurotessmesh::Version::getString( ).c_str( )) +
-    tr( " (" ) +
-    tr( std::to_string( neurotessmesh::Version::getRevision( )).c_str( )) +
-    tr( ")" ) +
+    tr( "version " ) + NEUROTESSMESH_REV_STRING + 
     tr( "<br><br>Using: " ) +
     tr( "<ul>" ) +
-    tr( "<li>nsol " ) +
-    tr( nsol::Version::getString( ).c_str( )) +
-    tr( " (" ) +
-    tr( std::to_string( nsol::Version::getRevision( )).c_str( )) +
-    tr( ")</li> " ) +
+    tr( "<li>nsol " ) + NSOL_REV_STRING + tr( "</li> " ) +
     #ifdef NSOL_USE_BRION
-    tr( "<li>Brion " ) +
-    tr( brion::Version::getString( ).c_str( )) +
-    tr( " (" ) +
-    tr( std::to_string( brion::Version::getRevision( )).c_str( )) +
-    tr( ")" ) +
-    tr( "</li> " ) +
+    tr( "<li>Brion " ) + BRION_REV_STRING + tr( "</li> " ) +
     #endif
     #ifdef NEUROTESSMESH_USE_SIMIL
-    tr( "<li>Simil " ) +
-    tr( simil::Version::getString( ).c_str( )) +
-    tr( " (" ) +
-    tr( std::to_string( simil::Version::getRevision( )).c_str( )) +
-    tr( ")" ) +
-    tr( "</li> " ) +
+    tr( "<li>Simil " ) + SIMIL_REV_STRING + tr( "</li> " ) +
     #endif
     #ifdef NEUROLOTS_USE_ZEROEQ
-    tr( "<li>ZEQ " ) +
-    tr( zeroeq::Version::getString( ).c_str( )) +
-    tr( " (" ) +
-    tr( std::to_string( zeroeq::Version::getRevision( )).c_str( )) +
-    tr( ")" ) +
-    tr ( "</li> " ) +
+    tr( "<li>ZEQ " ) + ZEROEQ_REV_STRING + tr ( "</li> " ) +
     #endif
     #ifdef NEUROLOTS_USE_GMRVLEX
-    tr( "<li>gmrvzeq " ) +
-    tr( gmrvlex::Version::getString( ).c_str( )) +
-    tr( " (" ) +
-    tr( std::to_string( gmrvlex::Version::getRevision( )).c_str( )) +
-    tr( ")" ) +
-    tr ( "</li> " ) +
+    tr( "<li>gmrvzeq " ) + GMRVLEX_REV_STRING + tr ( "</li> " ) +
     #endif
-    #ifdef NEUROLOTS_USE_DEFLECT
-    tr( "<li>Deflect " ) +
-    tr( deflect::Version::getString( ).c_str( )) +
-    tr( " (" ) +
-    tr( std::to_string( deflect::Version::getRevision( )).c_str( )) +
-    tr( ")" ) +
-    tr ( "</li> " ) +
+    #ifdef NEUROLOTS_USE_DEFLECT 
+    tr( "<li>Deflect " ) + DEFLECT_REV_STRING + tr ( "</li> " ) +
     #endif
-    tr( "<li>AcuteRecorder " ) +
-    tr( acuterecorder::Version::getString( ).c_str( )) +
-    tr( " (" ) +
-    tr( std::to_string( acuterecorder::Version::getRevision( )).c_str( )) +
-    tr( ")" ) +
-    tr( "</li> " ) +
-
+    tr( "<li>AcuteRecorder " ) + ACUTERECORDER_REV_STRING + tr( "</li> " ) +
     tr( "</ul>" ) +
     tr( "<br>VG-Lab - Universidad Rey Juan Carlos<br>"
         "<a href=www.vg-lab.es>www.vg-lab.es</a><br>"

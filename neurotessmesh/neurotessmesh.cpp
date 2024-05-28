@@ -49,6 +49,7 @@ int main( int argc, char** argv )
   std::string blueConfig;
   std::string swcFile;
   std::string sceneFile;
+  std::string hdf5File;
   std::string zeqUri;
   std::string target = std::string( "" );
   bool fullscreen = false, initWindowSize = false, initWindowMaximized = false;
@@ -116,6 +117,14 @@ int main( int argc, char** argv )
         usageMessage(programName);
 
     }
+    if( std::strcmp(argv[i], "-h5") == 0 )
+    {
+      if(++i < argc)
+        hdf5File = std::string (argv[i]);
+      else
+        usageMessage(programName);
+    }
+
     if( std::strcmp( argv[ i ], "-target" ) == 0 )
     {
       if(++i < argc )
@@ -205,6 +214,9 @@ int main( int argc, char** argv )
 
     if ( !sceneFile.empty() )
       mainWindow->openXMLScene( sceneFile );
+      
+    if(!hdf5File.empty())
+      mainWindow->openHDF5File (hdf5File);
   }
   else
   {
@@ -234,7 +246,7 @@ void usageMessage(const char* progName)
             << "Usage: "
             << progName << std::endl
             << "\t[ -bc blue_config_path | -swc swc_file_list "
-            << " | -xml scene_xml ] "
+            << " | -xml scene_xml | -h5 hdf5_file_path ] "
             << std::endl
             << "\t[ -target target_label ] "
             << std::endl
