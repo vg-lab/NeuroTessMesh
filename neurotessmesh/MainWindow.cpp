@@ -402,7 +402,8 @@ void MainWindow::showAbout( )
         "<img src=':/icons/rsc/logoVGLab.png' >&nbsp;&nbsp;&nbsp;&nbsp;"
         "<img src=':/icons/rsc/logoURJC.png' ><br><br> "
         "</p>"
-        "" )
+        "" ) +
+    "<a href='https://neurotessmesh-documentation.readthedocs.io/en/latest/'>Online documentation</a>"
   );
 }
 
