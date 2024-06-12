@@ -15,6 +15,7 @@ configure_file(${CMAKE_SOURCE_DIR}/CMake/common/cpp/version.cpp
 set( NEUROTESSMESH_SOURCES
   ${PROJECT_BINARY_DIR}/src/neurotessmesh/version.cpp
   mainwindow.ui
+  SaveScreenshotDialog.ui
   resources.qrc
   neurotessmesh.cpp
   MainWindow.cpp
@@ -23,12 +24,14 @@ set( NEUROTESSMESH_SOURCES
   CMakeSetup.rc
   Scene.cpp
   LoaderThread.cpp
+  SaveScreenshotDialog.cpp
   )
 
 set( NEUROTESSMESH_HEADERS
   ${PROJECT_BINARY_DIR}/include/neurotessmesh/version.h
   Scene.h
   LoaderThread.h
+  SaveScreenshotDialog.h
   )
 
 set(NEUROTESSMESH_MOC_HEADERS

@@ -11,6 +11,7 @@
 
 #include "MainWindow.h"
 #include "LoaderThread.h"
+#include "SaveScreenshotDialog.h"
 #include <neurotessmesh/version.h>
 #include <nsol/nsol.h>
 #include <neurotessmesh/Scene.h>
@@ -32,6 +33,8 @@
 #endif
 
 #include <QFileDialog>
+#include <QFileInfo>
+#include <QDateTime>
 #include <QInputDialog>
 #include <QInputDialog>
 #include <QMessageBox>
@@ -188,6 +191,9 @@ void MainWindow::init( const std::string& zeqSession_ )
 
   connect( _backGroundColor , SIGNAL( colorChanged( QColor )) ,
            _openGLWidget , SLOT( changeClearColor( QColor )) );
+
+  connect(_ui->actionTake_screenshot, SIGNAL(triggered()), 
+          this, SLOT(saveScreenshot()));
 
 #ifndef NEUROTESSMESH_USE_SIMIL
   _ui->actionOpenHDF5File->setEnabled( false );
@@ -1360,6 +1366,70 @@ void MainWindow::changeNeuronColor(QColor color)
     }
     updateNeuronList();
     _openGLWidget->repaint();
+  }
+}
+
+void MainWindow::saveScreenshot()
+{
+  QPixmap pixmap(_openGLWidget->size());
+  _openGLWidget->render(&pixmap);
+
+  const QIcon icon(":/icons/rsc/screenshot.svg");
+
+  SaveScreenshotDialog dialog(pixmap.width(), pixmap.height(), pixmap.toImage(), this);
+  dialog.setWindowIcon(icon);
+  
+  if (dialog.exec() == QDialog::Rejected)
+    return;
+
+  auto outputSize = dialog.getSize();
+
+  const auto dialogTitle = tr("Save screenshot");
+  const auto problemText = tr("Unable to save screenshot.");
+  auto suggestion = tr("NeuroTessMesh-screenshot-%1.png").arg(QDateTime::currentDateTime().toString("yyyy.MM.dd-hh.mm.ss"));
+  QString formats = "PNG image (*.png);;BMP image (*.bmp);;JPG image (*.jpg);;JPEG image (*.jpeg)";
+
+  auto fileName = QFileDialog::getSaveFileName(this, dialogTitle, QDir::home().absoluteFilePath(suggestion), formats, nullptr, QFileDialog::DontUseNativeDialog);
+
+  if (!fileName.isEmpty())
+  {
+    auto nameParts = fileName.split(".");
+    auto extension = nameParts.last().toUpper();
+
+    const QStringList validFileExtensions{"BMP", "JPG", "JPEG", "PNG"};
+
+    if (validFileExtensions.contains(extension))
+    {
+      if (pixmap.size() != outputSize)
+        pixmap = pixmap.scaled(outputSize.width(), outputSize.height(), Qt::AspectRatioMode::KeepAspectRatio, Qt::TransformationMode::SmoothTransformation);
+
+      auto saved = pixmap.save(fileName, extension.toUtf8(), 100);
+
+      // check for successful file write
+      QFileInfo fileInfo{fileName};
+      if (!saved || !fileInfo.exists() || fileInfo.size() == 0)
+      {
+        auto message = tr("Couln't save screenshot file '%1'. Problem writing format '%2'.").arg(fileInfo.fileName()).arg(extension);
+
+        QMessageBox msgBox(this);
+        msgBox.setWindowIcon(icon);
+        msgBox.setWindowTitle(dialogTitle);
+        msgBox.setText(problemText);
+        msgBox.setDetailedText(message);
+        msgBox.exec();
+      }
+    }
+    else
+    {
+      auto message = tr("Couln't save screenshot file '%1'. Unrecognized extension '%1'.").arg(fileName.split('/').last()).arg(extension);
+
+      QMessageBox msgBox(this);
+      msgBox.setWindowIcon(icon);
+      msgBox.setWindowTitle(dialogTitle);
+      msgBox.setText(problemText);
+      msgBox.setDetailedText(message);
+      msgBox.exec();
+    }
   }
 }
 

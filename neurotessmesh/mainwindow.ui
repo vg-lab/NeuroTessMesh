@@ -69,6 +69,8 @@
      <string>Tools</string>
     </property>
     <addaction name="actionAdvancedRecorderOptions"/>
+    <addaction name="separator"/>
+    <addaction name="actionTake_screenshot"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuOptions"/>
@@ -99,6 +101,7 @@
    <addaction name="actionRenderOptions"/>
    <addaction name="actionSimulation_player_options"/>
    <addaction name="separator"/>
+   <addaction name="actionTake_screenshot"/>
   </widget>
   <action name="actionQuit">
    <property name="text">
@@ -383,6 +386,18 @@
    </property>
    <property name="toolTip">
     <string>Shows/hides the player options.</string>
+   </property>
+  </action>
+  <action name="actionTake_screenshot">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/rsc/screenshot.svg</normaloff>:/icons/rsc/screenshot.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Take screenshot</string>
+   </property>
+   <property name="toolTip">
+    <string>Takes an image of the 3D view.</string>
    </property>
   </action>
  </widget>

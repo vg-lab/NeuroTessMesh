@@ -144,6 +144,9 @@ protected slots:
    */
   void changeNeuronColor(QColor color);
 
+  /** \brief Takes an image of the 3D view and shows a dialog to resize it before saving to disk. */
+  void saveScreenshot();
+
 protected:
   virtual void closeEvent( QCloseEvent* e ) override;
 
