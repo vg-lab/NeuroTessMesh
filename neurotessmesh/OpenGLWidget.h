@@ -166,9 +166,15 @@ public:
    */
   CameraPosition cameraPosition( ) const;
 
+  /** \brief Helper method to extract a mesh to a given file on disk. 
+   * \param[in] path Folder to save the mesh. The filename will be the id.
+   * 
+  */
+  void extractMesh(const std::string &path);
+
 public slots:
 
-  void toggleUpdateOnIdle( );
+  void toggleUpdateOnIdle();
 
   void toggleShowFPS( );
 

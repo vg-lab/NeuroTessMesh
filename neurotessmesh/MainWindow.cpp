@@ -1371,12 +1371,11 @@ void MainWindow::changeNeuronColor(QColor color)
 
 void MainWindow::saveScreenshot()
 {
-  QPixmap pixmap(_openGLWidget->size());
-  _openGLWidget->render(&pixmap);
+  auto image = _openGLWidget->grabFramebuffer();
 
   const QIcon icon(":/icons/rsc/screenshot.svg");
 
-  SaveScreenshotDialog dialog(pixmap.width(), pixmap.height(), pixmap.toImage(), this);
+  SaveScreenshotDialog dialog(image.width(), image.height(), image, this);
   dialog.setWindowIcon(icon);
   
   if (dialog.exec() == QDialog::Rejected)
@@ -1400,10 +1399,10 @@ void MainWindow::saveScreenshot()
 
     if (validFileExtensions.contains(extension))
     {
-      if (pixmap.size() != outputSize)
-        pixmap = pixmap.scaled(outputSize.width(), outputSize.height(), Qt::AspectRatioMode::KeepAspectRatio, Qt::TransformationMode::SmoothTransformation);
+      if (image.size() != outputSize)
+        image = image.scaled(outputSize.width(), outputSize.height(), Qt::AspectRatioMode::KeepAspectRatio, Qt::TransformationMode::SmoothTransformation);
 
-      auto saved = pixmap.save(fileName, extension.toUtf8(), 100);
+      auto saved = image.save(fileName, extension.toUtf8(), 100);
 
       // check for successful file write
       QFileInfo fileInfo{fileName};

@@ -70,7 +70,6 @@ void LoaderThread::run( )
     {
       case DataFileType::BlueConfig:
 #ifdef NSOL_USE_BRION
-
         emit progress( tr( "Loading Hierarchy" ) , 25 );
 
         m_dataset->loadBlueConfigHierarchy< nsol::Node ,

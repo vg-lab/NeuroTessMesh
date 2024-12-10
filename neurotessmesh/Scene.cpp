@@ -407,13 +407,14 @@ namespace neurotessmesh
   void Scene::extractEditNeuronMesh( const std::string& path_ )
   {
     auto extractedMesh = _renderer->extract(
-      _editMesh , _editNeuron->transform( ) , _paintUnselectedSoma ,
+      _editMesh , _editNeuron->transform( ), _paintUnselectedSoma ,
       _paintUnselectedNeurites );
-    nlgeometry::ObjWriter::writeMesh( extractedMesh , path_ );
+    const std::string header("# exported by NeuroTessMesh.\n");
+    nlgeometry::ObjWriter::writeMesh( extractedMesh , path_, header );
     delete extractedMesh;
   }
 
-  void Scene::conformRenderTuples( )
+  void Scene::conformRenderTuples()
   {
     nlgeometry::Meshes unselectedMeshes;
     std::vector< Eigen::Matrix4f > unselectedModels;

@@ -254,7 +254,14 @@ void OpenGLWidget::timerUpdate()
   this->update();
 }
 
-void OpenGLWidget::extractEditNeuronMesh( )
+void OpenGLWidget::extractMesh(const std::string &path)
+{
+  this->makeCurrent();
+  _scene->extractEditNeuronMesh(path);
+  glUseProgram(0);
+}
+
+void OpenGLWidget::extractEditNeuronMesh()
 {
   if ( _scene->isEditNeuronMeshExtraction( ))
   {
