@@ -6,4 +6,4 @@
 git_subproject(neurolots https://github.com/vg-lab/neurolots.git 6af81cae)
 git_subproject(ReTo https://github.com/vg-lab/ReTo.git 050214cf)
 git_subproject(acuterecorder https://github.com/vg-lab/AcuteRecorder.git 958e876)
-git_subproject(SimIL https://github.com/vg-lab/SimIL.git 376feed)
+git_subproject(SimIL https://github.com/vg-lab/SimIL.git 49ba64fa)

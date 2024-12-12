@@ -81,19 +81,19 @@ Ubuntu-Subproject:
     # tags:
     #  - osx-sierra
 
-Win7:
- stage: build
- script:
+#Win7:
+# stage: build
+# script:
   #- set WINAPP_REPO=gitlabci@vg-lab.es:apps
-  - set WINEXES=neurotessmesh
-  - call %ENVFILESDIR%\glut.bat
-  - call %ENVFILESDIR%\glew-2.1.0.bat
-  - call %ENVFILESDIR%\Boost-1.64-vs14-x64.bat
-  - call %ENVFILESDIR%\Qt-5.9-vs14.bat
-  - call %ENVFILESDIR%\eigen-3.1.2-vs12-x64.bat
-  - set BUILD_GENERATOR=Visual Studio 14 Win64
-  - set CMAKE_EXTRA_ARGS=-DCLONE_SUBPROJECTS=ON -DGLEW_INCLUDE_DIR=%GLEW_INCLUDE_DIR% -DGLEW_LIBRARY=%GLEW_LIBRARY%  -DGLUT_glut_LIBRARY=%GLUT_glut_LIBRARY% -DGLUT_INCLUDE_DIR=%GLUT_INCLUDE_DIR%
-  - set PATH=%PATH%;"c:\Program Files\Git\bin"
-  - bash.exe --login .gitlab-ci.sh
- tags:
-  - win7
+#  - set WINEXES=neurotessmesh
+#  - call %ENVFILESDIR%\glut.bat
+#  - call %ENVFILESDIR%\glew-2.1.0.bat
+#  - call %ENVFILESDIR%\Boost-1.64-vs14-x64.bat
+#  - call %ENVFILESDIR%\Qt-5.9-vs14.bat
+#  - call %ENVFILESDIR%\eigen-3.1.2-vs12-x64.bat
+#  - set BUILD_GENERATOR=Visual Studio 14 Win64
+#  - set CMAKE_EXTRA_ARGS=-DCLONE_SUBPROJECTS=ON -DGLEW_INCLUDE_DIR=%GLEW_INCLUDE_DIR% -DGLEW_LIBRARY=%GLEW_LIBRARY%  -DGLUT_glut_LIBRARY=%GLUT_glut_LIBRARY% -DGLUT_INCLUDE_DIR=%GLUT_INCLUDE_DIR%
+#  - set PATH=%PATH%;"c:\Program Files\Git\bin"
+#  - bash.exe --login .gitlab-ci.sh
+# tags:
+#  - win7
