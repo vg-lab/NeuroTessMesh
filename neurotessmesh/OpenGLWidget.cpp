@@ -367,7 +367,10 @@ void OpenGLWidget::changeSelectedNeuronPiece( int index_ )
 
 void OpenGLWidget::initializeGL( )
 {
-  initializeOpenGLFunctions( );
+  static bool initialized = false;
+  if(!initialized)
+    initializeOpenGLFunctions();
+
   glEnable( GL_DEPTH_TEST );
   glClearColor( 1.0f , 1.0f , 1.0f , 1.0f );
   glPolygonMode( GL_FRONT_AND_BACK , GL_FILL );
@@ -375,25 +378,26 @@ void OpenGLWidget::initializeGL( )
 
   glLineWidth( 1.5 );
 
-  QOpenGLWidget::initializeGL( );
+  if(!initialized)
+    QOpenGLWidget::initializeGL( );
 
   const GLubyte* vendor = glGetString( GL_VENDOR ); // Returns the vendor
-  const GLubyte* renderer = glGetString(
-    GL_RENDERER ); // Returns a hint to the model
+  const GLubyte* renderer = glGetString(GL_RENDERER ); // Returns a hint to the model
   const GLubyte* version = glGetString( GL_VERSION );
   const GLubyte* shadingVer = glGetString( GL_SHADING_LANGUAGE_VERSION );
 
-  std::cout << "OpenGL Hardware: " << vendor << " (" << renderer << ")"
-            << std::endl;
-  std::cout << "OpenGL Version: " << version << " (shading ver. " << shadingVer
-            << ")" << std::endl;
+  std::cout << "OpenGL Hardware: " << vendor << " (" << renderer << ")" << std::endl;
+  std::cout << "OpenGL Version: " << version << " (shading ver. " << shadingVer << ")" << std::endl;
 
-  nlrender::Config::init( );
+  if (!initialized)
+    nlrender::Config::init();
+
+  initialized = true;
 }
 
 void OpenGLWidget::paintGL( )
 {
-  glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   if (_scene != nullptr)
   {
@@ -553,7 +557,6 @@ void OpenGLWidget::changeNeuronColor(const int type, const QColor &qColor )
   _scene->setColor(type, Eigen::Vector3f(qColor.redF(), qColor.greenF(), qColor.blueF()));
   update( );
 }
-
 
 #ifdef NEUROTESSMESH_USE_LEXIS
 void OpenGLWidget::_onSelectionEvent(

@@ -45,6 +45,9 @@
 #include <QJsonArray>
 #include <QStandardItemModel>
 #include <QDir>
+#include <QScreen>
+#include <QWindow>
+#include <QShortcut>
 
 constexpr const char *POSITION_KEY = "positionData";
 
@@ -58,6 +61,9 @@ MainWindow::MainWindow(QWidget *parent_, bool updateOnIdle_)
 , m_dataLoader{nullptr}
 {
   _ui->setupUi(this);
+  auto layout = new QVBoxLayout();
+  layout->setContentsMargins(0, 0, 0, 0);
+  centralWidget()->setLayout(layout);
 
   auto recorderAction = RecorderUtils::recorderAction();
   _ui->menuTools->insertAction(_ui->menuTools->actions().first(),
@@ -106,6 +112,9 @@ MainWindow::MainWindow(QWidget *parent_, bool updateOnIdle_)
   auto positionsMenu = new QMenu();
   positionsMenu->setTitle("Camera positions");
   _ui->actionCamera_Positions->setMenu(positionsMenu);
+
+  new QShortcut(QKeySequence(Qt::CTRL + Qt::Key_F), this, SLOT(fullscreen()));
+  new QShortcut(QKeySequence(Qt::CTRL + +Qt::SHIFT + Qt::Key_F), this, SLOT(presentationMode()));
 }
 
 MainWindow::~MainWindow()
@@ -381,36 +390,36 @@ void MainWindow::showAbout()
   QMessageBox::about(
       this, tr("About ") + tr("NeuroTessMesh"),
       tr("<p><BIG><b>") + tr("NeuroTessMesh") + tr("</b></BIG><br><br>") +
-          tr("version ") + NEUROTESSMESH_REV_STRING +
-          tr("<br><br>Using: ") +
-          tr("<ul>") +
-          tr("<li>nsol ") + NSOL_REV_STRING + tr("</li> ") +
+          tr("version ") + NEUROTESSMESH_VERSION_STRING + QString(" (0x%1)").arg(NEUROTESSMESH_VERSION_REVISION, 0, 16) +
+      tr("<br><br>Using: ") +
+      tr("<ul>") +
+      tr("<li>nsol ") + NSOL_REV_STRING + tr("</li> ") +
 #ifdef NSOL_USE_BRION
-          tr("<li>Brion ") + BRION_REV_STRING + tr("</li> ") +
+      tr("<li>Brion ") + BRION_REV_STRING + tr("</li> ") +
 #endif
 #ifdef NEUROTESSMESH_USE_SIMIL
-          tr("<li>Simil ") + SIMIL_REV_STRING + tr("</li> ") +
+      tr("<li>Simil ") + SIMIL_REV_STRING + tr("</li> ") +
 #endif
 #ifdef NEUROLOTS_USE_ZEROEQ
-          tr("<li>ZEQ ") + ZEROEQ_REV_STRING + tr("</li> ") +
+      tr("<li>ZEQ ") + ZEROEQ_REV_STRING + tr("</li> ") +
 #endif
 #ifdef NEUROLOTS_USE_GMRVLEX
-          tr("<li>gmrvzeq ") + GMRVLEX_REV_STRING + tr("</li> ") +
+      tr("<li>gmrvzeq ") + GMRVLEX_REV_STRING + tr("</li> ") +
 #endif
 #ifdef NEUROLOTS_USE_DEFLECT
-          tr("<li>Deflect ") + DEFLECT_REV_STRING + tr("</li> ") +
+      tr("<li>Deflect ") + DEFLECT_REV_STRING + tr("</li> ") +
 #endif
-          tr("<li>AcuteRecorder ") + ACUTERECORDER_REV_STRING + tr("</li> ") +
-          tr("</ul>") +
-          tr("<br>VG-Lab - Universidad Rey Juan Carlos<br>"
-             "<a href=www.vg-lab.es>www.vg-lab.es</a><br>"
-             "<a href='mailto:dev@vg-lab.es'>dev@vg-lab.es</a><br><br>"
-             "<br>(C) 2015-2022. Universidad Rey Juan Carlos<br><br>"
-             "<img src=':/icons/rsc/logoVGLab.png' >&nbsp;&nbsp;&nbsp;&nbsp;"
-             "<img src=':/icons/rsc/logoURJC.png' ><br><br> "
-             "</p>"
-             "") +
-          "<a href='https://neurotessmesh-documentation.readthedocs.io/en/latest/'>Online documentation</a>");
+      tr("<li>AcuteRecorder ") + ACUTERECORDER_REV_STRING + tr("</li> ") +
+      tr("</ul>") +
+      tr("<br>VG-Lab - Universidad Rey Juan Carlos<br>"
+         "<a href=www.vg-lab.es>www.vg-lab.es</a><br>"
+         "<a href='mailto:dev@vg-lab.es'>dev@vg-lab.es</a><br><br>"
+         "<br>(C) 2015-2022. Universidad Rey Juan Carlos<br><br>"
+         "<img src=':/icons/rsc/logoVGLab.png' >&nbsp;&nbsp;&nbsp;&nbsp;"
+         "<img src=':/icons/rsc/logoURJC.png' ><br><br> "
+         "</p>"
+         "") +
+      "<a href='https://neurotessmesh-documentation.readthedocs.io/en/latest/'>Online documentation</a>");
 }
 
 void MainWindow::openRecorder()
@@ -1308,6 +1317,105 @@ void MainWindow::onColoringChanged(int index)
   QApplication::restoreOverrideCursor();
 }
 
+void MainWindow::presentationMode()
+{
+  if (_openGLWidget->parent() != this)
+  {
+    auto parent = qobject_cast<QDialog*>(_openGLWidget->parent());
+    if(parent)
+      parent->removeEventFilter(this);
+
+    setCentralWidget(_openGLWidget);
+    _openGLWidget->setParent(this);
+
+    if(parent)
+    {
+      parent->close();
+      parent->deleteLater();
+    }
+  }
+  else
+  {
+    auto presentationDialog = new QDialog(this, Qt::Window | Qt::FramelessWindowHint);
+    presentationDialog->setModal(false);
+    presentationDialog->installEventFilter(this);
+    auto layout = new QHBoxLayout();
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSizeConstraint(QLayout::SetNoConstraint);
+    presentationDialog->setLayout(layout);
+    layout->addWidget(_openGLWidget);
+    _openGLWidget->setParent(presentationDialog);
+    presentationDialog->showNormal();
+
+    const auto screen = presentationDialog->windowHandle()->screen();
+    const auto geom = screen->geometry();
+    presentationDialog->move(geom.topLeft());
+    presentationDialog->resize(geom.width(), geom.height());
+  }
+  _openGLWidget->update();
+}
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+  auto presentationDialog = qobject_cast<QDialog *>(obj);
+
+  if (presentationDialog)
+  {
+    _openGLWidget->getCamera()->rotate(Eigen::Vector3f(M_PI / 360, 0, 0));
+    if (event->type() == QEvent::KeyPress || event->type() == QEvent::ShortcutOverride)
+    {
+      QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+      const auto modifiers = static_cast<int>(Qt::KeyboardModifiers(Qt::ShiftModifier | Qt::ControlModifier));
+      const auto key = keyEvent->key();
+
+      if(key == Qt::Key_Escape) // avoid closing the presentation mode from keyboard.
+      {
+        event->accept();
+        return true;
+      }
+
+      if ((keyEvent->modifiers() & (Qt::ShiftModifier | Qt::ControlModifier)) == modifiers)
+      {
+        if (key == Qt::Key_F)
+        {
+          this->presentationMode();
+          event->accept();
+          return true;
+        }
+
+        if (key == Qt::Key_Left || key == Qt::Key_Right || key == Qt::Key_Up)
+        {
+          const auto screen = presentationDialog->windowHandle()->screen();
+          const auto geom = screen->geometry();
+
+          switch (key)
+          {
+            default:
+            case Qt::Key_Up:
+              presentationDialog->setMaximumSize(QSize{geom.size()});
+              presentationDialog->resize(geom.width(), geom.height());
+              presentationDialog->move(geom.topLeft());
+              break;
+            case Qt::Key_Left:
+              presentationDialog->setMaximumSize(QSize{geom.width()/2, geom.height()});
+              presentationDialog->resize(geom.width()/2, geom.height());
+              presentationDialog->move(geom.topLeft());
+              break;
+            case Qt::Key_Right:
+              presentationDialog->setMaximumSize(QSize{geom.width() / 2, geom.height()});
+              presentationDialog->resize(geom.width()/2, geom.height());
+              presentationDialog->move(geom.topLeft()+QPoint(geom.width()/2, 0));
+              break;
+          }
+          event->accept();
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 void MainWindow::closeEvent(QCloseEvent *e)
 {
   if (_recorder)
@@ -1444,6 +1552,14 @@ void MainWindow::saveScreenshot()
   }
 }
 
+void MainWindow::fullscreen()
+{
+  if(!isFullScreen())
+    showFullScreen();
+  else
+    showMaximized();
+}
+
 void MainWindow::loadData(const std::string &arg1, const std::string &arg2,
                           const neurotessmesh::LoaderThread::DataFileType type)
 {
@@ -1496,11 +1612,9 @@ void MainWindow::onDataLoaded()
     _openGLWidget->makeCurrent();
     _openGLWidget->update();
 
-    _scene = std::make_shared<neurotessmesh::Scene>(
-        _openGLWidget->getCamera(), m_dataLoader->getDataset()
+    _scene = std::make_shared<neurotessmesh::Scene>(_openGLWidget->getCamera(), m_dataLoader->getDataset()
 #ifdef NEUROTESSMESH_USE_SIMIL
-                                        ,
-        m_dataLoader->getPlayer()
+    , m_dataLoader->getPlayer()
 #endif
     );
     _openGLWidget->setScene(_scene);

@@ -8,13 +8,17 @@
  * Do not distribute without further notice.
  */
 
+// Neurotessmesh
 #include "ui_mainwindow.h"
 #include <QMainWindow>
 #include "OpenGLWidget.h"
 #include "ColorSelectionWidget.h"
 #include "LoaderThread.h"
+
+// C++
 #include <set>
 
+// Qt
 #include <QDockWidget>
 #include <QListWidget>
 #include <QVBoxLayout>
@@ -34,7 +38,7 @@ namespace Ui
 }
 
 class Recorder;
-
+class QDialog;
 class QCloseEvent;
 
 namespace neurotessmesh
@@ -42,8 +46,10 @@ namespace neurotessmesh
   class LoaderThread;
 }
 
+
+
 class MainWindow
-  : public QMainWindow
+: public QMainWindow
 {
 Q_OBJECT
 
@@ -144,11 +150,24 @@ protected slots:
    */
   void changeNeuronColor(QColor color);
 
-  /** \brief Takes an image of the 3D view and shows a dialog to resize it before saving to disk. */
+  /** \brief Takes an image of the 3D view and shows a dialog to resize it before saving to disk. 
+   * 
+   */
   void saveScreenshot();
+
+  /** \brief Puts the application in fullscreen mode
+   * 
+   */
+  void fullscreen();
+
+  /** \brief Puts the application in presentation mode.
+   * 
+   */
+  void presentationMode();
 
 protected:
   virtual void closeEvent( QCloseEvent* e ) override;
+  bool eventFilter(QObject *obj, QEvent *event);
 
   QString _lastOpenedFileName;
 
