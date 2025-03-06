@@ -40,7 +40,7 @@ namespace neurotessmesh
     , _colorMode(SELECTION)
     , _camera( camera )
     , _animation( nullptr )
-    , _renderer( new nlrender::Renderer( ))
+    , _renderer( new nlrender::Renderer(true))
     , _dataSet( dataset )
 #ifdef NEUROTESSMESH_USE_SIMIL
     , _simulationPlayer( player )

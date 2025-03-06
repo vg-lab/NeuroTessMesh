@@ -39,7 +39,6 @@ typedef std::vector< std::pair< float , Eigen::Vector3f >> Gradient;
 
 namespace neurotessmesh
 {
-
   /* \class Scene */
   class Scene
   {

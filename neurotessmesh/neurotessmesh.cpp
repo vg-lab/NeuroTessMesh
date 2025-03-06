@@ -42,6 +42,7 @@ int main( int argc, char** argv )
 #endif
   std::locale prev_locale = std::locale::global(std::locale::classic());
 
+  QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
   QApplication application(argc,argv);
 
   const auto programName = argv[0];
