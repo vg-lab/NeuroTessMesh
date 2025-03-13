@@ -1328,7 +1328,9 @@ void MainWindow::presentationMode()
     setCentralWidget(_openGLWidget);
     _openGLWidget->setParent(this);
 
-    if(parent)
+    resizeDocks({_extractMeshDock, _configurationDock, _renderOptionsDock, _playerDock}, {1, 1, 1, 1}, Qt::Horizontal);
+    
+    if (parent)
     {
       parent->close();
       parent->deleteLater();
