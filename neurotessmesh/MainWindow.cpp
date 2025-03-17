@@ -155,6 +155,9 @@ void MainWindow::init(const std::string &zeqSession_)
   connect(_ui->actionOpenHDF5File, SIGNAL(triggered()),
           this, SLOT(openHDF5FileThroughDialog()));
 
+  connect(_ui->actionOpenSnuddaFile, SIGNAL(triggered()),
+          this, SLOT(openSnuddaFileThroughDialog()));
+
   connect(_radiusSlider, SIGNAL(valueChanged(int)),
           this, SLOT(onActionGenerate(int)));
 
@@ -236,6 +239,10 @@ void MainWindow::openHDF5File(const std::string &fileName)
 {
   loadData(fileName, std::string(),
            neurotessmesh::LoaderThread::DataFileType::HDF5);
+}
+
+void MainWindow::openSnuddaFile(const std::string& fileName) {
+  loadData(fileName, std::string(), neurotessmesh::LoaderThread::DataFileType::Snudda);
 }
 
 std::set<int> MainWindow::updateNeuronList()
@@ -382,6 +389,19 @@ void MainWindow::openHDF5FileThroughDialog()
   {
     std::string fileName = path.toStdString();
     openHDF5File(fileName);
+  }
+}
+
+void MainWindow::openSnuddaFileThroughDialog() {
+  QString path = QFileDialog::getOpenFileName(
+    this, tr("Open Snudda File"), _lastOpenedFileName,
+    tr("hdf5 ( *.hdf5 *.h5);; All files (*)"), nullptr,
+    QFileDialog::DontUseNativeDialog);
+
+  if (path != QString(""))
+  {
+    std::string fileName = path.toStdString();
+    openSnuddaFile(fileName);
   }
 }
 

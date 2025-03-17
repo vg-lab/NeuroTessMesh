@@ -56,7 +56,7 @@ namespace neurotessmesh
   public:
     enum class DataFileType
     {
-      BlueConfig , SWC , NsolScene , HDF5
+      BlueConfig , SWC , NsolScene , HDF5, Snudda
     };
 
     /** \brief LoaderThread class constructor.

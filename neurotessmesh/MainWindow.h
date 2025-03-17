@@ -73,6 +73,8 @@ public:
 
   void openHDF5File( const std::string& fileName );
 
+  void openSnuddaFile( const std::string& fileName );
+
 public slots:
 
   /** \brief Updates the neurons list and returns the coloring values used
@@ -90,6 +92,8 @@ public slots:
   void openSWCFileThroughDialog( );
 
   void openHDF5FileThroughDialog( );
+
+  void openSnuddaFileThroughDialog( );
 
   void showAbout( );
 

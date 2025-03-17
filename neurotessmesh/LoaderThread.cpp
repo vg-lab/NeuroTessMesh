@@ -45,6 +45,8 @@
 // C++
 #include <memory>
 
+#include "loader/SnuddaLoader.h"
+
 using namespace neurotessmesh;
 
 LoaderThread::LoaderThread( const std::string& arg1 , const std::string& arg2 ,
@@ -139,6 +141,13 @@ void LoaderThread::run( )
 #ifdef NEUROTESSMESH_USE_SIMIL
         loadH5Morphology( );
 #endif
+        break;
+
+      case DataFileType::Snudda: {
+        SnuddaLoader loader(m_fileName);
+        loader.setMaxNeuronsToLoad(20);
+        loader.load(*m_dataset);
+      }
         break;
 
       default:

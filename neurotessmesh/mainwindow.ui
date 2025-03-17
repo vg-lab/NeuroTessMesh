@@ -35,6 +35,7 @@
     <addaction name="actionOpenXMLScene"/>
     <addaction name="actionOpenSWCFile"/>
     <addaction name="actionOpenHDF5File"/>
+    <addaction name="actionOpenSnuddaFile"/>
     <addaction name="actionCloseData"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_camera_positions"/>
@@ -92,6 +93,7 @@
    <addaction name="actionOpenXMLScene"/>
    <addaction name="actionOpenSWCFile"/>
    <addaction name="actionOpenHDF5File"/>
+   <addaction name="actionOpenSnuddaFile"/>
    <addaction name="separator"/>
    <addaction name="actionHome"/>
    <addaction name="actionConfiguration"/>
@@ -245,6 +247,18 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+S</string>
+   </property>
+  </action>
+  <action name="actionOpenSnuddaFile">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/rsc/open_H5.png</normaloff>:/icons/rsc/open_H5.png</iconset>
+   </property>
+   <property name="text">
+    <string>Open Snudda</string>
+   </property>
+   <property name="toolTip">
+    <string>Open Snudda</string>
    </property>
   </action>
   <action name="actionShowFPSOnIdleUpdate">

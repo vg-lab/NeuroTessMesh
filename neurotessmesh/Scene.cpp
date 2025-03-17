@@ -274,6 +274,7 @@ namespace neurotessmesh
       {
         if ( _neuronMeshes.find( morphology ) == _neuronMeshes.end( ))
         {
+          std::cout << "Loading morphology of neuron " << neuronIt.second->gid() << std::endl;
           auto simplifier = nsol::Simplifier::Instance( );
           simplifier->adaptSoma( morphology );
           simplifier->simplify( morphology ,

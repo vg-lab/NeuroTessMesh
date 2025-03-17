@@ -43,6 +43,7 @@ set( NEUROTESSMESH_LICENSE LGPL)
 set( COMMON_PROJECT_DOMAIN es.vg-lab)
 
 include(Common)
+include_directories(HighFive/include)
 
 common_find_package(Qt5Core 5.4 SYSTEM REQUIRED)
 common_find_package(Qt5Widgets 5.4 SYSTEM REQUIRED)
@@ -56,8 +57,9 @@ common_find_package(gmrvlex ${NEUROTESSMESH_OPTS_FIND_ARGS})
 common_find_package(GLUT SYSTEM)
 common_find_package(Boost COMPONENTS system filesystem SYSTEM)
 common_find_package(acuterecorder REQUIRED )
+common_find_package(nsol REQUIRED )
 
-list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Qt5Core Qt5Widget Qt5OpenGL GLEW neurolots acuterecorder)
+list(APPEND NEUROTESSMESH_DEPENDENT_LIBRARIES Qt5Core Qt5Widget Qt5OpenGL GLEW neurolots acuterecorder HighFive)
 
 if(NEUROTESSMESH_OPTIONALS_AS_REQUIRED)
   common_find_package(Brion REQUIRED)
