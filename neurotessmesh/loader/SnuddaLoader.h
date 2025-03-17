@@ -21,7 +21,7 @@ namespace neurotessmesh {
         std::string loadMorphologies(const std::unordered_map<uint32_t, nsol::Neuron*>& neurons) const;
 
     public:
-        explicit SnuddaLoader(const boost::filesystem::path& path);
+        explicit SnuddaLoader(const boost::filesystem::path& path, const boost::filesystem::path &repoPath);
 
         ~SnuddaLoader();
 

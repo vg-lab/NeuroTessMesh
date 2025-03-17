@@ -252,7 +252,7 @@
   <action name="actionOpenSnuddaFile">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/icons/rsc/open_H5.png</normaloff>:/icons/rsc/open_H5.png</iconset>
+     <normaloff>:/icons/rsc/open_snd.png</normaloff>:/icons/rsc/open_snd.png</iconset>
    </property>
    <property name="text">
     <string>Open Snudda</string>

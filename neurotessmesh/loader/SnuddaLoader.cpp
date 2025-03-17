@@ -14,6 +14,7 @@ namespace neurotessmesh {
         auto idsDS = _file->openDataSet("network/neurons/neuron_id");
         auto positionDS = _file->openDataSet("network/neurons/position");
         auto rotationDS = _file->openDataSet("network/neurons/rotation");
+        auto voxelSizeDS = _file->openDataSet("meta/voxel_size");
 
         hsize_t dims;
         idsDS.getSpace().getSimpleExtentDims(&dims);
@@ -21,10 +22,12 @@ namespace neurotessmesh {
         std::vector<uint32_t> ids(dims);
         std::vector<std::array<double, 3>> position(dims);
         std::vector<std::array<double, 9>> rotation(dims);
+        double vSize; 
 
         idsDS.read(ids.data(), H5::PredType::INTEL_I32);
         positionDS.read(position.data(), H5::PredType::IEEE_F64LE);
         rotationDS.read(rotation.data(), H5::PredType::IEEE_F64LE);
+        voxelSizeDS.read(&vSize, H5::PredType::IEEE_F64LE);
 
         std::unordered_map<uint32_t, nsol::Neuron*> neurons;
 
@@ -37,9 +40,11 @@ namespace neurotessmesh {
                     model(r, c) = static_cast<float>(rotation[i][c + r * 3]);
                 }
             }
-            model(0, 3) = pos[0];
-            model(1, 3) = pos[1];
-            model(2, 3) = pos[2];
+
+            // the scaling is blind, not real.
+            model(0, 3) = pos[0] * 10/vSize;
+            model(1, 3) = pos[1] * 10/vSize;
+            model(2, 3) = pos[2] * 10/vSize;
             model(3, 3) = 1.0f;
 
             nsol::Neuron* neuron = new nsol::Neuron(nullptr, 0, ids[i], model,
@@ -51,6 +56,7 @@ namespace neurotessmesh {
         idsDS.close();
         positionDS.close();
         rotationDS.close();
+        voxelSizeDS.close();
 
         return neurons;
     }
@@ -102,9 +108,9 @@ namespace neurotessmesh {
         _maxNeurons = maxNeurons;
     }
 
-    SnuddaLoader::SnuddaLoader(const boost::filesystem::path& path)
+    SnuddaLoader::SnuddaLoader(const boost::filesystem::path &path, const boost::filesystem::path &repoPath)
         : _file(std::make_unique<H5::H5File>(path.string(), 0)),
-          _dataPath(path.parent_path() / "data"),
+          _dataPath(repoPath / "data"),
           _maxNeurons(10000000) {}
 
     SnuddaLoader::~SnuddaLoader() {

@@ -73,7 +73,7 @@ public:
 
   void openHDF5File( const std::string& fileName );
 
-  void openSnuddaFile( const std::string& fileName );
+  void openSnuddaFile(const std::string &fileName, const std::string dataRepositoryPath);
 
 public slots:
 

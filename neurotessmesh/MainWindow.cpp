@@ -241,8 +241,8 @@ void MainWindow::openHDF5File(const std::string &fileName)
            neurotessmesh::LoaderThread::DataFileType::HDF5);
 }
 
-void MainWindow::openSnuddaFile(const std::string& fileName) {
-  loadData(fileName, std::string(), neurotessmesh::LoaderThread::DataFileType::Snudda);
+void MainWindow::openSnuddaFile(const std::string& fileName, const std::string dataRepositoryPath) {
+  loadData(fileName, dataRepositoryPath, neurotessmesh::LoaderThread::DataFileType::Snudda);
 }
 
 std::set<int> MainWindow::updateNeuronList()
@@ -325,12 +325,12 @@ void MainWindow::openBlueConfigThroughDialog()
 {
 #ifdef NSOL_USE_BRION
 
-  QString path = QFileDialog::getOpenFileName(
+  const auto path = QFileDialog::getOpenFileName(
       this, tr("Open BlueConfig"), _lastOpenedFileName,
       tr("BlueConfig ( BlueConfig CircuitConfig);; All files (*)"),
       nullptr, QFileDialog::DontUseNativeDialog);
 
-  if (path != QString(""))
+  if (!path.isEmpty())
   {
     bool ok;
     QString text = QInputDialog::getText(
@@ -351,12 +351,12 @@ void MainWindow::openBlueConfigThroughDialog()
 void MainWindow::openXMLSceneThroughDialog()
 {
 #ifdef NSOL_USE_QT5CORE
-  QString path = QFileDialog::getOpenFileName(
+  const auto path = QFileDialog::getOpenFileName(
       this, tr("Open XML Scene"), _lastOpenedFileName,
       tr("XML ( *.xml);; All files (*)"), nullptr,
       QFileDialog::DontUseNativeDialog);
 
-  if (path != QString(""))
+  if (!path.isEmpty())
   {
     std::string fileName = path.toStdString();
     openXMLScene(fileName);
@@ -366,12 +366,12 @@ void MainWindow::openXMLSceneThroughDialog()
 
 void MainWindow::openSWCFileThroughDialog()
 {
-  QString path = QFileDialog::getOpenFileName(
+  const auto path = QFileDialog::getOpenFileName(
       this, tr("Open Swc File"), _lastOpenedFileName,
       tr("swc ( *.swc);; All files (*)"), nullptr,
       QFileDialog::DontUseNativeDialog);
 
-  if (path != QString(""))
+  if (!path.isEmpty())
   {
     std::string fileName = path.toStdString();
     openSWCFile(fileName);
@@ -380,12 +380,12 @@ void MainWindow::openSWCFileThroughDialog()
 
 void MainWindow::openHDF5FileThroughDialog()
 {
-  QString path = QFileDialog::getOpenFileName(
+  const auto path = QFileDialog::getOpenFileName(
       this, tr("Open HD5 File"), _lastOpenedFileName,
       tr("hdf5 ( *.hdf5 *.h5);; All files (*)"), nullptr,
       QFileDialog::DontUseNativeDialog);
 
-  if (path != QString(""))
+  if (!path.isEmpty())
   {
     std::string fileName = path.toStdString();
     openHDF5File(fileName);
@@ -393,15 +393,18 @@ void MainWindow::openHDF5FileThroughDialog()
 }
 
 void MainWindow::openSnuddaFileThroughDialog() {
-  QString path = QFileDialog::getOpenFileName(
+  const auto path = QFileDialog::getOpenFileName(
     this, tr("Open Snudda File"), _lastOpenedFileName,
     tr("hdf5 ( *.hdf5 *.h5);; All files (*)"), nullptr,
     QFileDialog::DontUseNativeDialog);
 
-  if (path != QString(""))
+  if (!path.isEmpty())
   {
-    std::string fileName = path.toStdString();
-    openSnuddaFile(fileName);
+    const auto repoDir = QFileDialog::getExistingDirectory(this, tr("Open Snudda data repository location"), QFileInfo(path).absolutePath(), QFileDialog::DontUseNativeDialog);
+    if(!repoDir.isEmpty())
+    {
+      openSnuddaFile(path.toStdString(), repoDir.toStdString());
+    }
   }
 }
 

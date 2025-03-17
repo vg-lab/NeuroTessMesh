@@ -144,7 +144,7 @@ void LoaderThread::run( )
         break;
 
       case DataFileType::Snudda: {
-        SnuddaLoader loader(m_fileName);
+        SnuddaLoader loader(m_fileName, m_target);
         loader.load(*m_dataset);
       }
         break;
