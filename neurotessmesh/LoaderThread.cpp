@@ -145,7 +145,6 @@ void LoaderThread::run( )
 
       case DataFileType::Snudda: {
         SnuddaLoader loader(m_fileName);
-        loader.setMaxNeuronsToLoad(20);
         loader.load(*m_dataset);
       }
         break;

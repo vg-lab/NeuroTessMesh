@@ -267,6 +267,18 @@ namespace neurotessmesh
 
   void Scene::generateMeshes()
   {
+
+    std::set<nsol::NeuronMorphologyPtr> ptr;
+
+    for (const auto neuronIt: _dataSet->neurons( )) {
+      auto morphology = neuronIt.second->morphology( );
+      if (morphology) {
+        ptr.insert(morphology);
+      }
+    }
+
+    std::cout << "Morphologies: " << ptr.size() << std::endl;
+
     for (const auto neuronIt: _dataSet->neurons( ))
     {
       auto morphology = neuronIt.second->morphology( );

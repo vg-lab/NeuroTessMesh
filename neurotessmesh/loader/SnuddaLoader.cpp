@@ -34,12 +34,12 @@ namespace neurotessmesh {
             Eigen::Matrix4f model;
             for (size_t c = 0; c < 3; ++c) {
                 for (size_t r = 0; r < 3; ++r) {
-                    model(c, r) = static_cast<float>(rotation[i][c + r * 3]);
+                    model(r, c) = static_cast<float>(rotation[i][c + r * 3]);
                 }
             }
-            model(3, 0) = pos[0];
-            model(3, 1) = pos[1];
-            model(3, 2) = pos[2];
+            model(0, 3) = pos[0];
+            model(1, 3) = pos[1];
+            model(2, 3) = pos[2];
             model(3, 3) = 1.0f;
 
             nsol::Neuron* neuron = new nsol::Neuron(nullptr, 0, ids[i], model,
