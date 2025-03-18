@@ -168,7 +168,7 @@
   <action name="actionOpenBlueConfig">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/icons/rsc/open_bc.png</normaloff>:/icons/rsc/open_bc.png</iconset>
+     <normaloff>:/icons/rsc/folder_bc.svg</normaloff>:/icons/rsc/folder_bc.svg</iconset>
    </property>
    <property name="text">
     <string>Open BlueConfig</string>
@@ -183,7 +183,7 @@
   <action name="actionOpenXMLScene">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/icons/rsc/open_xml.png</normaloff>:/icons/rsc/open_xml.png</iconset>
+     <normaloff>:/icons/rsc/folder_xml.svg</normaloff>:/icons/rsc/folder_xml.svg</iconset>
    </property>
    <property name="text">
     <string>Open XML Scene</string>
@@ -222,7 +222,7 @@
   <action name="actionOpenSWCFile">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/icons/rsc/open_swc.png</normaloff>:/icons/rsc/open_swc.png</iconset>
+     <normaloff>:/icons/rsc/folder_swc.svg</normaloff>:/icons/rsc/folder_swc.svg</iconset>
    </property>
    <property name="text">
     <string>Open SWC</string>
@@ -237,7 +237,7 @@
   <action name="actionOpenHDF5File">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/icons/rsc/open_H5.png</normaloff>:/icons/rsc/open_H5.png</iconset>
+     <normaloff>:/icons/rsc/folder_h5.svg</normaloff>:/icons/rsc/folder_h5.svg</iconset>
    </property>
    <property name="text">
     <string>Open HDF5</string>
@@ -252,7 +252,7 @@
   <action name="actionOpenSnuddaFile">
    <property name="icon">
     <iconset resource="resources.qrc">
-     <normaloff>:/icons/rsc/open_snd.png</normaloff>:/icons/rsc/open_snd.png</iconset>
+     <normaloff>:/icons/rsc/folder_snd.svg</normaloff>:/icons/rsc/folder_snd.svg</iconset>
    </property>
    <property name="text">
     <string>Open Snudda</string>

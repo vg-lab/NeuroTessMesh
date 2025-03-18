@@ -31,7 +31,8 @@ namespace neurotessmesh {
 
         std::unordered_map<uint32_t, nsol::Neuron*> neurons;
 
-        for (size_t i = 0; i < std::min(ids.size(), _maxNeurons); ++i) {
+        for (size_t i = 0; i < std::min(ids.size(), _maxNeurons); ++i) 
+        {
             glm::vec3 pos(position[i][0], position[i][1], position[i][2]);
 
             Eigen::Matrix4f model;
@@ -80,14 +81,16 @@ namespace neurotessmesh {
             nsol::Dendrite, nsol::Axon, nsol::Soma,
             nsol::NeuronMorphology, nsol::Neuron> reader;
 
-        for (auto& pair: neurons) {
+        for (auto &pair : neurons)
+        {
             auto id = pair.first;
             auto neuron = pair.second;
             auto name = std::string(cStringArray[id]);
-            if (loaded.count(name) > 0) {
+            if (loaded.count(name) > 0) 
+            {
                 auto morphology = loaded[name];
                 neuron->morphology(morphology);
-                morphology->parentNeurons().push_back(neuron);
+                morphology->addParentNeuron(neuron);
                 continue;
             }
             std::string modified = name;
@@ -96,7 +99,7 @@ namespace neurotessmesh {
             auto morphology = reader.readMorphology(modified, false);
             loaded[name] = morphology;
             neuron->morphology(morphology);
-            morphology->parentNeurons().push_back(neuron);
+            morphology->addParentNeuron(neuron);
         }
 
         morphologiesDS.close();
