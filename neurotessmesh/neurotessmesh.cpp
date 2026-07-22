@@ -287,10 +287,10 @@ void dumpVersion( void )
 
   std::cerr << std::endl
             << "neurotessmesh "
-            << neurotessmesh::Version::getMajor( ) << "."
-            << neurotessmesh::Version::getMinor( ) << "."
-            << neurotessmesh::Version::getPatch( )
-            << " (" << neurotessmesh::Version::getRevision( ) << ")"
+            << NEUROTESSMESH_VERSION_MAJOR << "."
+            << NEUROTESSMESH_VERSION_MINOR << "."
+            << NEUROTESSMESH_VERSION_PATCH
+            << " (" << NEUROTESSMESH_COMMIT_HASH << ")"
             << std::endl << std::endl;
 
   std::cerr << "Brion support built-in: ";

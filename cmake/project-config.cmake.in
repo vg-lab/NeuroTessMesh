@@ -1,0 +1,14 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(Boost CONFIG COMPONENTS filesystem)
+find_dependency(Qt5 COMPONENTS Core Widgets OpenGL)
+find_dependency(GLEW)
+find_dependency(Eigen3 NO_MODULE)
+# find_dependency(OpenGL)
+# find_dependency(neurolots)
+# find_dependency(nsol)
+# find_dependency(ReTo)
+# find_dependency(SimIL)
+
+include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME_LOWER@-targets.cmake")

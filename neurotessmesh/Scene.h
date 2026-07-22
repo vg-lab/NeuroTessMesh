@@ -27,7 +27,6 @@
 #include <nlgeometry/nlgeometry.h>
 #include <nlrender/nlrender.h>
 
-#include <neurotessmesh/api.h>
 #ifdef NEUROTESSMESH_USE_SIMIL
   #include <simil/simil.h>
 #endif
@@ -72,7 +71,6 @@ namespace neurotessmesh
     /**
      * Default constructor
      */
-    NEUROTESSMESH_API
     explicit Scene( reto::OrbitalCameraController* camera = nullptr,
                     nsol::DataSet* dataset = nullptr
 #ifdef NEUROTESSMESH_USE_SIMIL
@@ -83,35 +81,30 @@ namespace neurotessmesh
     /**
      * Default destructor
      */
-    NEUROTESSMESH_API
     ~Scene( );
 
     /**
      * Method to set the scene mode
      * @param mode_ new scnene mode
      */
-    NEUROTESSMESH_API
     void mode( TSceneMode mode_ );
 
     /**
      * Method to get the scene mode
      * @return the current scene mode
      */
-    NEUROTESSMESH_API
     TSceneMode mode( ) const;
 
     /**
      * Method to set the scene mode
      * @param mode_ new scnene mode
      */
-    NEUROTESSMESH_API
     void coloringMode( TColoringMode mode_ );
 
     /**
      * Method to get the scene mode
      * @return the current scene mode
      */
-    NEUROTESSMESH_API
     TColoringMode coloringMode( ) const;
 
 
@@ -123,25 +116,21 @@ namespace neurotessmesh
     /**
      * Method to rendering the scene based on the current mode
      */
-    NEUROTESSMESH_API
     void render( );
 
     /**
      * Method to close and deleted data from dataSet
      */
-    NEUROTESSMESH_API
     void close( );
 
     /**
      * Method to set the scene params to default
      */
-    NEUROTESSMESH_API
     void home( );
 
     /**
      * Method to animate the camera to the given position, radius and rotation
      */
-    NEUROTESSMESH_API
     void cameraPosition( const Eigen::Vector3f& position , float radius ,
                          const Eigen::Matrix3f& rotation );
 
@@ -150,7 +139,6 @@ namespace neurotessmesh
      * @param indices_ vector of indices to compute the bounding box
      * @return axis align bounding box
      */
-    NEUROTESSMESH_API
     nlgeometry::AxisAlignedBoundingBox
     computeBoundingBox( const std::vector< unsigned int >& indices_ );
 
@@ -158,82 +146,63 @@ namespace neurotessmesh
      * Method to compute axis align bounding box
      * @return axis align bounding box for all the current neurons
      */
-    NEUROTESSMESH_API
     nlgeometry::AxisAlignedBoundingBox computeBoundingBox( );
 
     /**
      * Method to generate the meshes associated to the loaded neurons
      */
-    NEUROTESSMESH_API
     void generateMeshes( );
 
     /**
      * Method to set the render options of unseletected and selected neurons
      * @param paint_ option of neuron render
      */
-    NEUROTESSMESH_API
     void paintUnselectedSoma( bool paint_ );
 
-    NEUROTESSMESH_API
     void paintUnselectedNeurites( bool paint_ );
 
-    NEUROTESSMESH_API
     void paintSelectedSoma( bool paint_ );
 
-    NEUROTESSMESH_API
     void paintSelectedNeurites( bool paint_ );
 
     /**
      * Method to set the scene level of subdivision
      * @param lod_ scene level of detail
      */
-    NEUROTESSMESH_API
     void levelOfDetail( float lod_ );
 
     /**
      * Method to set the scene maximum subdivision distance
      * @param maximumDistance_ scene maximum subdivision distance
      */
-    NEUROTESSMESH_API
     void maximumDistance( float maximumDistance_ );
 
     /**
      * Method to set the scene subidivision criteria
      * @param subidivisionCriteria_ scene subdivision criteria
      */
-    NEUROTESSMESH_API
     void subdivisionCriteria( nlrender::Renderer::TTessCriteria
                               subdivisionCriteria_ );
 
-    NEUROTESSMESH_API
     std::vector< unsigned int > neuronIndices( );
 
-    NEUROTESSMESH_API
     nsol::NeuronsMap& neurons() const;
 
-    NEUROTESSMESH_API
     void setNeuronToEdit(const unsigned int id_);
 
-    NEUROTESSMESH_API
     unsigned int numEditMorphologyNeurites( ) const;
 
-    NEUROTESSMESH_API
     void regenerateEditNeuronMesh( float alphaRadius ,
                                    const std::vector< float >& alphaNeurites_ );
 
-    NEUROTESSMESH_API
     bool isEditNeuronMeshExtraction( );
 
-    NEUROTESSMESH_API
     void extractEditNeuronMesh( const std::string& path_ );
 
-    NEUROTESSMESH_API
     void conformRenderTuples( );
 
-    NEUROTESSMESH_API
     void changeSelectedIndices( const std::vector< unsigned int >& indices_ );
 
-    NEUROTESSMESH_API
     void focusOnIndices( const std::vector< unsigned int >& indices_ );
 
     /** \brief Returns the color of the given neuron according to

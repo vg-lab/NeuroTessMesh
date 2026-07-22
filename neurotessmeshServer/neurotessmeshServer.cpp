@@ -128,9 +128,9 @@ int main( int argc, char** argv )
         boost::filesystem::path( inFile ).filename( ).string( );
       std::string header(
         "#Mesh generated with neurotessmeshServer " +
-        std::to_string( neurotessmeshServer::Version::getMajor( )) + "." +
-        std::to_string( neurotessmeshServer::Version::getMinor( )) + "." +
-        std::to_string( neurotessmeshServer::Version::getPatch( )) +
+        std::to_string( NEUROTESSMESHSERVER_VERSION_MAJOR ) + "." +
+        std::to_string( NEUROTESSMESHSERVER_VERSION_MINOR ) + "." +
+        std::to_string( NEUROTESSMESHSERVER_VERSION_PATCH ) +
         " application from the VG-Lab/URJC \n"
         "#Contact: juanjose.garcia@urjc.es\n"
         "#Generated from: " + originalFile + "\n"

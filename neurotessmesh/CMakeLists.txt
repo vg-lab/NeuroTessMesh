@@ -1,19 +1,16 @@
-set(Name NeuroTessMesh)
-set(NAME NEUROTESSMESH)
-set(namespace neurotessmesh)
-set(NAMESPACE NEUROTESSMESH)
-set(INCLUDE_NAME neurotessmesh)
+# Define headers
+set(NEUROTESSMESH_HEADERS
+  Scene.h
+  LoaderThread.h
+  SaveScreenshotDialog.h
 
-set(PROJECT_VERSION_ABI ${${PROJECT_NAME}_VERSION_ABI})
-configure_file(${CMAKE_SOURCE_DIR}/CMake/common/cpp/api.h
-  ${PROJECT_BINARY_DIR}/include/neurotessmesh/api.h @ONLY)
-configure_file(${CMAKE_SOURCE_DIR}/CMake/common/cpp/version.h
-  ${PROJECT_BINARY_DIR}/include/neurotessmesh/version.h @ONLY)
-configure_file(${CMAKE_SOURCE_DIR}/CMake/common/cpp/version.cpp
-  ${PROJECT_BINARY_DIR}/src/neurotessmesh/version.cpp @ONLY)
+  MainWindow.h
+  OpenGLWidget.h
+  ColorSelectionWidget.h
+)
 
-set( NEUROTESSMESH_SOURCES
-  ${PROJECT_BINARY_DIR}/src/neurotessmesh/version.cpp
+# Define source files
+set(NEUROTESSMESH_SOURCES
   mainwindow.ui
   SaveScreenshotDialog.ui
   resources.qrc
@@ -25,76 +22,118 @@ set( NEUROTESSMESH_SOURCES
   Scene.cpp
   LoaderThread.cpp
   SaveScreenshotDialog.cpp
-  )
+)
 
-set( NEUROTESSMESH_HEADERS
-  ${PROJECT_BINARY_DIR}/include/neurotessmesh/version.h
-  Scene.h
-  LoaderThread.h
-  SaveScreenshotDialog.h
-  )
+# # Create the includes strings
+# set(HEADER_INCLUDES "")
+# foreach(header ${NEUROTESSMESH_PUBLIC_HEADERS})
+#   string(APPEND HEADER_INCLUDES "#include <${PROJECT_NAME_LOWER}/${header}>\n")
+# endforeach()
 
-set(NEUROTESSMESH_MOC_HEADERS
-  MainWindow.h
-  OpenGLWidget.h
-  ColorSelectionWidget.h
-  )
+# # Generate the unified header
+# configure_file(
+#   "${PROJECT_SOURCE_DIR}/cmake/unified_header.h.in"
+#   "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME_LOWER}.h"
+# )
 
-set( NEUROTESSMESH_LINK_LIBRARIES
-  ${OPENGL_LIBRARIES}
-  ${GLEW_LIBRARIES}
-  Qt5::Core
-  Qt5::Widgets
-  Qt5::OpenGL
-  nsol
-  ReTo
-  nlgeometry
-  nlgenerator
-  nlrender
-  acuterecorder
+# Get the current Git commit for the version header
+find_package(Git)
+if(Git_FOUND)
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} --no-pager log -n 1 HEAD "--pretty=format:%h"
+    OUTPUT_VARIABLE GIT_COMMIT_HASH
+    RESULT_VARIABLE git_result
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE
   )
-  
-if (NEUROTESSMESH_OPTIONALS_AS_REQUIRED)
-  list( APPEND NEUROTESSMESH_LINK_LIBRARIES SimIL QSimIL Brion Brain)
+  if(git_result EQUAL 0)
+    message(STATUS "Last ${PROJECT_NAME} Git commit: ${GIT_COMMIT_HASH}")
+  endif()
 endif()
 
-if ( ZEROEQ_FOUND )
-  list( APPEND NEUROTESSMESH_LINK_LIBRARIES ZeroEQ )
-  if ( LEXIS_FOUND )
-    list( APPEND NEUROTESSMESH_LINK_LIBRARIES Lexis )
-  endif( )
-  if ( GMRVLEX_FOUND )
-    list( APPEND NEUROTESSMESH_LINK_LIBRARIES gmrvlex )
-  endif( )
-endif( )
+# Generate the version header
+configure_file (
+  "${PROJECT_SOURCE_DIR}/cmake/version.h.in"
+  "${PROJECT_BINARY_DIR}/${PROJECT_NAME_LOWER}/version.h"
+)
 
-include_directories(
-  ${PROJECT_BINARY_DIR}/include
-  ${PROJECT_BINARY_DIR}/neurotessmesh
-  ${PROJECT_SOURCE_DIR}
-  )
+# Enable Qt generators
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
 
-if ( NOT DEFAULT_CONTEXT_OPENGL_MAJOR )
-  set( DEFAULT_CONTEXT_OPENGL_MAJOR 4 )
-endif( )
-if ( NOT DEFAULT_CONTEXT_OPENGL_MINOR )
-  set( DEFAULT_CONTEXT_OPENGL_MINOR 0 )
-endif( )
+# Create the target
+add_executable(${PROJECT_NAME})
 
-add_definitions( "-DDEFAULT_CONTEXT_OPENGL_MAJOR=${DEFAULT_CONTEXT_OPENGL_MAJOR}" )
-add_definitions( "-DDEFAULT_CONTEXT_OPENGL_MINOR=${DEFAULT_CONTEXT_OPENGL_MINOR}" )
+# set_target_properties(${PROJECT_NAME} PROPERTIES
+#   VERSION ${PROJECT_VERSION}
+#   SOVERSION ${PROJECT_VERSION_MAJOR}
+# )
 
-if (MSVC)
-  add_definitions(-DNEUROTESSMESH_STATIC)
-endif( )
+# Add sources to the target
+target_sources(${PROJECT_NAME}
+  PRIVATE
+    ${NEUROTESSMESH_SOURCES}
+  PRIVATE
+    FILE_SET public_headers
+      TYPE HEADERS
+      BASE_DIRS
+        ${PROJECT_SOURCE_DIR}
+      FILES
+        ${NEUROTESSMESH_HEADERS}
+)
 
-if ( APPLE )
-  set( NEUROTESSMESH_ICON neurotessmesh.icns )
-endif()
+# Add generated sources to the target
+target_sources(${PROJECT_NAME}
+  PRIVATE
+    FILE_SET public_headers_generated
+      TYPE HEADERS
+      BASE_DIRS
+        ${PROJECT_BINARY_DIR}
+      FILES
+        # Generated headers
+        # ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME_LOWER}.h
+        # ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME_LOWER}_export.h
+        ${CMAKE_CURRENT_BINARY_DIR}/version.h
+)
 
-if ( UNIX AND NOT APPLE )
-  set( NEUROTESSMESH_ICON rsc/neurotessmesh.png )
-endif( )
+# Add compile definitions 
+target_compile_definitions(${PROJECT_NAME}
+  PUBLIC
+  PRIVATE
+    DEFAULT_CONTEXT_OPENGL_MAJOR=${DEFAULT_CONTEXT_OPENGL_MAJOR}
+    DEFAULT_CONTEXT_OPENGL_MINOR=${DEFAULT_CONTEXT_OPENGL_MINOR}
+    # $<$<BOOL:${NEUROTESSMESH_USE_BRION}>:NEUROTESSMESH_USE_BRION>
+    $<$<BOOL:${NEUROTESSMESH_USE_SIMIL}>:NEUROTESSMESH_USE_SIMIL>
+)
 
+# Link libraries
+target_link_libraries(${PROJECT_NAME}
+  PUBLIC
+    Qt5::Core
+    Qt5::Widgets
+    Qt5::OpenGL
+    GLEW::GLEW
+    # OpenGL::GL
+    # Eigen3::Eigen
+    neurolots::nlgeometry
+    neurolots::nlrender
+    neurolots::nlgenerator
+    nsol::nsol
+    ReTo::ReTo
+    "$<$<BOOL:${NEUROTESSMESH_USE_SIMIL}>:SimIL::SimIL>"
+    "$<$<BOOL:${NEUROTESSMESH_USE_SIMIL}>:SimIL::QSimIL>"
+    acuterecorder::acuterecorder
+  PRIVATE
+    Boost::filesystem
+)
 
-common_application( NeuroTessMesh GUI ${COMMON_APP_ARGS} )
+# Define installation directory variables
+include(GNUInstallDirs)
+
+# Create an export
+install(TARGETS ${PROJECT_NAME}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)

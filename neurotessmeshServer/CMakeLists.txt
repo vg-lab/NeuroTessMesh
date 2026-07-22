@@ -1,57 +1,99 @@
-set(Name neurotessmeshServer)
-set(NAME NEUROTESSMESHSERVER)
-set(namespace neurotessmeshServer)
-set(NAMESPACE NEUROTESSMESHSERVER)
-set(INCLUDE_NAME neurotessmeshServer)
+# Set the target name
+set(CURRENT_TARGET_NAME neurotessmeshServer)
+string(TOLOWER ${CURRENT_TARGET_NAME} CURRENT_TARGET_NAME_LOWER)
+string(TOUPPER ${CURRENT_TARGET_NAME} CURRENT_TARGET_NAME_UPPER)
 
-set(PROJECT_VERSION_ABI ${${PROJECT_NAME}_VERSION_ABI})
-configure_file(${CMAKE_SOURCE_DIR}/CMake/common/cpp/api.h
-  ${PROJECT_BINARY_DIR}/include/neurotessmeshServer/api.h @ONLY)
-configure_file(${CMAKE_SOURCE_DIR}/CMake/common/cpp/version.h
-  ${PROJECT_BINARY_DIR}/include/neurotessmeshServer/version.h @ONLY)
-configure_file(${CMAKE_SOURCE_DIR}/CMake/common/cpp/version.cpp
-  ${PROJECT_BINARY_DIR}/src/neurotessmeshServer/version.cpp @ONLY)
+# Define headers
+set(NEUROTESSMESHSERVER_HEADERS
+)
 
-set( NEUROTESSMESHSERVER_SOURCES
-  ${PROJECT_BINARY_DIR}/src/neurotessmeshServer/version.cpp
+# Define source files
+set(NEUROTESSMESHSERVER_SOURCES
   neurotessmeshServer.cpp
+)
+
+# Get the current Git commit for the version header
+find_package(Git)
+if(Git_FOUND)
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} --no-pager log -n 1 HEAD "--pretty=format:%h"
+    OUTPUT_VARIABLE GIT_COMMIT_HASH
+    RESULT_VARIABLE git_result
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE
   )
-set( NEUROTESSMESHSERVER_HEADERS
-  ${PROJECT_BINARY_DIR}/include/neurotessmeshServer/version.h
-  )
+  if(git_result EQUAL 0)
+    message(STATUS "Last ${CURRENT_TARGET_NAME} Git commit: ${GIT_COMMIT_HASH}")
+  endif()
+endif()
 
-include_directories(
-  ${PROJECT_BINARY_DIR}/include
-  ${PROJECT_BINARY_DIR}/neurotessmesh
-  ${PROJECT_SOURCE_DIR}
-  )
+# Generate the version header
+configure_file(
+  "${PROJECT_SOURCE_DIR}/cmake/version-component.h.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/version.h"
+)
 
-set( NEUROTESSMESHSERVER_LINK_LIBRARIES
-  ${OPENGL_LIBRARIES}
-  ${GLEW_LIBRARIES}
-  ${GLUT_LIBRARIES}
-  ${Boost_SYSTEM_LIBRARIES}
-  ${Boost_FILESYSTEM_LIBRARIES}
-  nsol
-  ReTo
-  nlgeometry
-  nlgenerator
-  nlrender
-  )
+# Create the target
+add_executable(${CURRENT_TARGET_NAME})
 
-if ( NOT DEFAULT_CONTEXT_OPENGL_MAJOR )
-  set( DEFAULT_CONTEXT_OPENGL_MAJOR 4 )
-endif( )
-if ( NOT DEFAULT_CONTEXT_OPENGL_MINOR )
-  set( DEFAULT_CONTEXT_OPENGL_MINOR 0 )
-endif( )
+# set_target_properties(${CURRENT_TARGET_NAME} PROPERTIES
+#   VERSION ${PROJECT_VERSION}
+#   SOVERSION ${PROJECT_VERSION_MAJOR}
+# )
 
-add_definitions( "-DDEFAULT_CONTEXT_OPENGL_MAJOR=${DEFAULT_CONTEXT_OPENGL_MAJOR}" )
-add_definitions( "-DDEFAULT_CONTEXT_OPENGL_MINOR=${DEFAULT_CONTEXT_OPENGL_MINOR}" )
+# Add sources to the target
+target_sources(${CURRENT_TARGET_NAME}
+  PRIVATE
+    ${NEUROTESSMESHSERVER_SOURCES}
+  PRIVATE
+    FILE_SET public_headers
+      TYPE HEADERS
+      BASE_DIRS
+        ${PROJECT_SOURCE_DIR}
+      FILES
+        ${NEUROTESSMESHSERVER_HEADERS}
+)
 
-if (MSVC)
-  add_definitions(-DNEUROTESSMESHSERVER_STATIC)
-endif( )
+# Add generated sources to the target
+target_sources(${CURRENT_TARGET_NAME}
+  PRIVATE
+    FILE_SET public_headers_generated
+      TYPE HEADERS
+      BASE_DIRS
+        ${PROJECT_BINARY_DIR}
+      FILES
+        # Generated headers
+        # ${CMAKE_CURRENT_BINARY_DIR}/${CURRENT_TARGET_NAME_LOWER}.h
+        # ${CMAKE_CURRENT_BINARY_DIR}/${CURRENT_TARGET_NAME_LOWER}_export.h
+        ${CMAKE_CURRENT_BINARY_DIR}/version.h
+)
 
+# Add compile definitions 
+target_compile_definitions(${CURRENT_TARGET_NAME}
+  PUBLIC
+  PRIVATE
+)
 
-common_application( neurotessmeshServer NOHELP )
+# Link libraries
+target_link_libraries(${CURRENT_TARGET_NAME}
+  PUBLIC
+    GLEW::GLEW
+    # OpenGL::GL
+    neurolots::nlgeometry
+    neurolots::nlrender
+    neurolots::nlgenerator
+    nsol::nsol
+    ReTo::ReTo
+  PRIVATE
+    Boost::filesystem
+)
+
+# Define installation directory variables
+include(GNUInstallDirs)
+
+# Create an export
+install(TARGETS ${CURRENT_TARGET_NAME}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)

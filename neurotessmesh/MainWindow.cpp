@@ -13,6 +13,7 @@
 #include "SaveScreenshotDialog.h"
 #include <neurotessmesh/version.h>
 #include <nsol/nsol.h>
+#include <nsol/version.h>
 #include <neurotessmesh/Scene.h>
 
 #ifdef NEUROLOTS_USE_GMRVZEQ
@@ -23,11 +24,13 @@
 #endif
 
 #include <acuterecorder/acuterecorder.h>
+#include <acuterecorder/version.h>
 
 #ifdef NEUROTESSMESH_USE_SIMIL
 
 #include <qsimil/qsimil.h>
 #include <simil/simil.h>
+#include <simil/version.h>
 
 #endif
 
@@ -390,7 +393,7 @@ void MainWindow::showAbout()
   QMessageBox::about(
       this, tr("About ") + tr("NeuroTessMesh"),
       tr("<p><BIG><b>") + tr("NeuroTessMesh") + tr("</b></BIG><br><br>") +
-          tr("version ") + NEUROTESSMESH_VERSION_STRING + QString(" (0x%1)").arg(NEUROTESSMESH_VERSION_REVISION, 0, 16) +
+          tr("version ") + NEUROTESSMESH_VERSION + QString(" (0x%1)").arg(NEUROTESSMESH_COMMIT_HASH, 0, 16) +
       tr("<br><br>Using: ") +
       tr("<ul>") +
       tr("<li>nsol ") + NSOL_REV_STRING + tr("</li> ") +
