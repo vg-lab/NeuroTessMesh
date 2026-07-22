@@ -28,3 +28,6 @@ SimIL*
 
 nlrender/Shaders.h
 .vscode*
+
+/build
+/.cache
