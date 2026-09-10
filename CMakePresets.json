@@ -1,0 +1,210 @@
+{
+  "version": 8,
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "displayName": "Base configuration",
+      "description": "Common config shared by configurations",
+      "generator": "Ninja"
+    },
+    {
+      "name": "debug",
+      "inherits": "base",
+      "displayName": "Debug",
+      "description": "Debug build",
+      "binaryDir": "${sourceDir}/build/debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_DOCS": "OFF"
+      }
+    },
+    {
+      "name": "debug-extra",
+      "inherits": "debug",
+      "displayName": "Debug Extra",
+      "description": "Debug build with extra features",
+      "binaryDir": "${sourceDir}/build/debug-extra",
+      "cacheVariables": {}
+    },
+    {
+      "name": "release",
+      "inherits": "base",
+      "displayName": "Release",
+      "description": "Release build",
+      "binaryDir": "${sourceDir}/build/release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "release-extra",
+      "inherits": "release",
+      "displayName": "Release Extra",
+      "description": "Release build with extra features",
+      "binaryDir": "${sourceDir}/build/release-extra",
+      "cacheVariables": {}
+    },
+    {
+      "name": "debug-clang",
+      "inherits": "debug",
+      "displayName": "Debug Clang",
+      "description": "Debug build using Clang compiler",
+      "binaryDir": "${sourceDir}/build/debug-clang",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "release-clang",
+      "inherits": "release",
+      "displayName": "Release Clang",
+      "description": "Release build using Clang compiler",
+      "binaryDir": "${sourceDir}/build/release-clang",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "debug-extra",
+      "configurePreset": "debug-extra"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "release-extra",
+      "configurePreset": "release-extra"
+    },
+    {
+      "name": "debug-clang",
+      "configurePreset": "debug-clang"
+    },
+    {
+      "name": "release-clang",
+      "configurePreset": "release-clang"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "displayName": "Base test configuration",
+      "description": "Common config shared by test configurations",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "ignore",
+        "stopOnFailure": false
+      }
+    },
+    {
+      "name": "debug",
+      "inherits": "base",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "debug-extra",
+      "inherits": "base",
+      "configurePreset": "debug-extra"
+    },
+    {
+      "name": "release",
+      "inherits": "base",
+      "configurePreset": "release"
+    },
+    {
+      "name": "release-extra",
+      "inherits": "base",
+      "configurePreset": "release-extra"
+    },
+    {
+      "name": "debug-clang",
+      "inherits": "base",
+      "configurePreset": "debug-clang"
+    },
+    {
+      "name": "release-clang",
+      "inherits": "base",
+      "configurePreset": "release-clang"
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "debug-test",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "debug"
+        },
+        {
+          "type": "build",
+          "name": "debug"
+        },
+        {
+          "type": "test",
+          "name": "debug"
+        }
+      ]
+    },
+    {
+      "name": "debug-extra-test",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "debug-extra"
+        },
+        {
+          "type": "build",
+          "name": "debug-extra"
+        },
+        {
+          "type": "test",
+          "name": "debug-extra"
+        }
+      ]
+    },
+    {
+      "name": "release-test",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "release"
+        },
+        {
+          "type": "build",
+          "name": "release"
+        },
+        {
+          "type": "test",
+          "name": "release"
+        }
+      ]
+    },
+    {
+      "name": "release-extra-test",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "release-extra"
+        },
+        {
+          "type": "build",
+          "name": "release-extra"
+        },
+        {
+          "type": "test",
+          "name": "release-extra"
+        }
+      ]
+    }
+  ]
+}
